@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>PHP 初期学习笔记（CTF Web 方向） | 我的博客</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="PHP 语言学习笔记（CTF Web 方向） 整理日期：2026-10-21环境：PHP 7.3.4 ｜ 用途：CTF 备赛 &#x2F; Web 渗透基础   配套资料下载 C vs PHP 语法对照表.pdf php 学习文档 WP《sql》.pdf   目录 一、PHP 基础语法 二、危险函数与 RCE 三、反序列化漏洞 四、CTF 高频坑速记   一、PHP 基础语法1.1 环境与运行 P">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PHP 初期学习笔记（CTF Web 方向）">
+<meta property="og:url" content="https://wang-inception-point.github.io/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.html">
+<meta property="og:site_name" content="我的博客">
+<meta property="og:description" content="PHP 语言学习笔记（CTF Web 方向） 整理日期：2026-10-21环境：PHP 7.3.4 ｜ 用途：CTF 备赛 &#x2F; Web 渗透基础   配套资料下载 C vs PHP 语法对照表.pdf php 学习文档 WP《sql》.pdf   目录 一、PHP 基础语法 二、危险函数与 RCE 三、反序列化漏洞 四、CTF 高频坑速记   一、PHP 基础语法1.1 环境与运行 P">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://wang-inception-point.github.io/images/php-learn/%E7%B4%A0%E6%9D%90-%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%87%BD%E6%95%B0%E8%A1%A8.png">
+<meta property="og:image" content="https://wang-inception-point.github.io/images/php-learn/%E7%B4%A0%E6%9D%90-%E8%BF%87%E6%BB%A4%E9%BB%91%E5%90%8D%E5%8D%95%E5%8E%9F%E7%90%86.png">
+<meta property="og:image" content="https://wang-inception-point.github.io/images/php-learn/%E7%B4%A0%E6%9D%90-Linux%E7%BB%95%E8%BF%87%E6%8A%80%E5%B7%A7.png">
+<meta property="og:image" content="https://wang-inception-point.github.io/images/php-learn/%E7%B4%A0%E6%9D%90-POP%E9%93%BE%E6%B5%81%E7%A8%8B%E5%9B%BE.png">
+<meta property="article:published_time" content="2026-10-20T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-10-25T08:56:40.366Z">
+<meta property="article:author" content="wang-inception-point">
+<meta property="article:tag" content="PHP">
+<meta property="article:tag" content="CTF">
+<meta property="article:tag" content="Web安全">
+<meta property="article:tag" content="反序列化">
+<meta property="article:tag" content="RCE">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://wang-inception-point.github.io/images/php-learn/%E7%B4%A0%E6%9D%90-%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%87%BD%E6%95%B0%E8%A1%A8.png">
+  
+    <link rel="alternate" href="/atom.xml" title="我的博客" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">我的博客</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">周报与笔记</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS 订阅"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="搜索"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="搜索"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://wang-inception-point.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-php-初期学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="article-date">
+  <time class="dt-published" datetime="2026-10-20T16:00:00.000Z" itemprop="datePublished">2026-10-21</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E7%AC%AC%E4%B8%80%E5%91%A8%E5%91%A8%E6%8A%A5/">第一周周报</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      PHP 初期学习笔记（CTF Web 方向）
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="PHP-语言学习笔记（CTF-Web-方向）"><a href="#PHP-语言学习笔记（CTF-Web-方向）" class="headerlink" title="PHP 语言学习笔记（CTF Web 方向）"></a>PHP 语言学习笔记（CTF Web 方向）</h1><blockquote>
+<p>整理日期：2026-10-21<br>环境：PHP 7.3.4 ｜ 用途：CTF 备赛 &#x2F; Web 渗透基础</p>
+</blockquote>
+<hr>
+<h2 id="配套资料下载"><a href="#配套资料下载" class="headerlink" title="配套资料下载"></a>配套资料下载</h2><ul>
+<li><a href="/files/C-vs-PHP%E8%AF%AD%E6%B3%95%E5%AF%B9%E7%85%A7%E8%A1%A8.pdf">C vs PHP 语法对照表.pdf</a></li>
+<li><a href="/files/php%E5%AD%A6%E4%B9%A0%E6%96%87%E6%A1%A3WP%E3%80%8Asql%E3%80%8B.pdf">php 学习文档 WP《sql》.pdf</a></li>
+</ul>
+<hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#%E4%B8%80php-%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95">一、PHP 基础语法</a></li>
+<li><a href="#%E4%BA%8C%E5%8D%B1%E9%99%A9%E5%87%BD%E6%95%B0%E4%B8%8E-rce">二、危险函数与 RCE</a></li>
+<li><a href="#%E4%B8%89%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%BC%8F%E6%B4%9E">三、反序列化漏洞</a></li>
+<li><a href="#%E5%9B%9Bctf-%E9%AB%98%E9%A2%91%E5%9D%91%E9%80%9F%E8%AE%B0">四、CTF 高频坑速记</a></li>
+</ul>
+<hr>
+<h1 id="一、PHP-基础语法"><a href="#一、PHP-基础语法" class="headerlink" title="一、PHP 基础语法"></a>一、PHP 基础语法</h1><h2 id="1-1-环境与运行"><a href="#1-1-环境与运行" class="headerlink" title="1.1 环境与运行"></a>1.1 环境与运行</h2><ul>
+<li>PHP 是<strong>服务器端脚本语言</strong>，跑在服务器（Apache&#x2F;Nginx）上动态生成网页。</li>
+<li>浏览器只看到 PHP 输出的结果，<strong>看不到源码</strong>。</li>
+<li>本地环境：phpstudy（<code>D:\phpstudy_pro</code>），CLI 运行方式：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">php 文件名.php</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>网页运行：用 PHP 内置服务器 <code>php -S 127.0.0.1:端口 -t 目录</code>。</li>
+</ul>
+<p><strong>运行流程</strong>：浏览器发请求 → 服务器执行 PHP → PHP 算出结果 → 返回给浏览器。</p>
+<h2 id="1-2-文件结构与注释"><a href="#1-2-文件结构与注释" class="headerlink" title="1.2 文件结构与注释"></a>1.2 文件结构与注释</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span>              <span class="comment">// PHP 代码从这里开始</span></span><br><span class="line"><span class="comment">// 单行注释（# 也行）</span></span><br><span class="line"><span class="comment">/* 多行注释 */</span></span><br><span class="line"><span class="keyword">echo</span> <span class="string">&quot;Hello&quot;</span>;      <span class="comment">// 每条语句以 ; 结尾</span></span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>PHP 代码必须包在 <code>&lt;?php ... ?&gt;</code> 里。</li>
+<li>没有 <code>main()</code>，脚本从上到下<strong>逐行执行</strong>。</li>
+<li>注释 <code>//</code> <code>#</code>（单行）、<code>/* */</code>（多行）不执行。</li>
+</ul>
+<h2 id="1-3-变量与类型"><a href="#1-3-变量与类型" class="headerlink" title="1.3 变量与类型"></a>1.3 变量与类型</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$name</span> = <span class="string">&quot;CTF&quot;</span>;   <span class="comment">// 字符串</span></span><br><span class="line"><span class="variable">$age</span>  = <span class="number">18</span>;      <span class="comment">// 整数</span></span><br><span class="line"><span class="variable">$price</span> = <span class="number">3.99</span>;   <span class="comment">// 浮点</span></span><br><span class="line"><span class="variable">$isWeb</span> = <span class="literal">true</span>;   <span class="comment">// 布尔</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>变量**必须带 <code>$</code>**，不用声明类型（弱类型）。</li>
+<li><strong>同一个变量可中途改类型</strong>：<code>$x = 10; $x = &quot;字符串&quot;;</code>（CTF 漏洞常源于此）。</li>
+<li>未赋值变量 &#x3D; <code>NULL</code>，输出不报错。</li>
+<li><strong>类型自动转换</strong>：<code>&quot;42&quot; + 8 = 50</code>（字符串自动当数字）。</li>
+<li>常量：<code>define(&quot;X&quot;, 值)</code> 或 <code>const X = 值;</code>。</li>
+<li><strong>变量变量</strong> <code>$$</code>：用变量的值当变量名。</li>
+</ul>
+<h2 id="1-4-运算符与比较（CTF-重点）"><a href="#1-4-运算符与比较（CTF-重点）" class="headerlink" title="1.4 运算符与比较（CTF 重点）"></a>1.4 运算符与比较（CTF 重点）</h2><p><strong>算术</strong>：<code>+ - * / %</code>（同 C）+ <code>**</code>（幂，C 没有）</p>
+<p><strong>字符串拼接</strong>：用 <code>.</code>（C 用 strcat）</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;flag&#123;&quot;</span> . <span class="string">&quot;test&#125;&quot;</span>   <span class="comment">// → flag&#123;test&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>复合赋值</strong>：<code>+= -= *= /= .=</code>（<code>.=</code> 拼接追加）</p>
+<p><strong>逻辑</strong>：<code>&amp;&amp; || !</code>　<strong>位运算</strong>：<code>&amp; | ^ ~ &lt;&lt; &gt;&gt;</code></p>
+<h3 id="vs-（CTF-头号大坑）"><a href="#vs-（CTF-头号大坑）" class="headerlink" title="== vs ===（CTF 头号大坑）"></a><code>==</code> vs <code>===</code>（CTF 头号大坑）</h3><table>
+<thead>
+<tr>
+<th>运算符</th>
+<th>比较方式</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>==</code></td>
+<td>松散：只比值，自动转类型</td>
+<td><code>1 == &quot;1&quot;</code> 真，<code>&quot;abc&quot; == 0</code> 真</td>
+</tr>
+<tr>
+<td><code>===</code></td>
+<td>严格：值和类型都相等</td>
+<td><code>1 === &quot;1&quot;</code> 假</td>
+</tr>
+</tbody></table>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span> == <span class="string">&quot;1&quot;</span>            <span class="comment">// true</span></span><br><span class="line"><span class="string">&quot;abc&quot;</span> == <span class="number">0</span>          <span class="comment">// true（非数字字符串转 0）</span></span><br><span class="line"><span class="number">0</span> == <span class="literal">false</span>          <span class="comment">// true</span></span><br><span class="line"><span class="string">&quot;0e123&quot;</span> == <span class="string">&quot;0e456&quot;</span>  <span class="comment">// true（0e 开头 = 0）</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>0e 魔法哈希</strong>：任何 <code>0e</code> 开头的字符串都被当 0，互相之间相等。</p>
+<blockquote>
+<p>CTF 经典：<code>md5($a) == md5($b)</code> 且 <code>$a != $b</code>，找两个 md5 以 0e 开头的字符串即可通过。</p>
+</blockquote>
+<p><strong>数组绕过</strong>：<code>strcmp($arr, &quot;abc&quot;)</code> 遇到数组返回 <code>NULL</code>，<code>NULL == 0</code> 为 true → 绕过校验。</p>
+<h2 id="1-5-条件与循环"><a href="#1-5-条件与循环" class="headerlink" title="1.5 条件与循环"></a>1.5 条件与循环</h2><p><strong>和 C 几乎一样</strong>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> / <span class="keyword">elseif</span> / <span class="keyword">else</span></span><br><span class="line"><span class="keyword">switch</span> ... <span class="keyword">case</span> ... <span class="keyword">break</span></span><br><span class="line"><span class="keyword">for</span> (<span class="variable">$i</span>=<span class="number">0</span>; <span class="variable">$i</span>&lt;<span class="number">5</span>; <span class="variable">$i</span>++)</span><br><span class="line"><span class="keyword">while</span> (<span class="variable">$j</span> &lt; <span class="number">3</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>新增 foreach</strong>（遍历数组标准姿势）：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 索引数组：逐个取</span></span><br><span class="line"><span class="keyword">foreach</span> (<span class="variable">$arr</span> <span class="keyword">as</span> <span class="variable">$v</span>) &#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 关联数组：同时拿键和值</span></span><br><span class="line"><span class="keyword">foreach</span> (<span class="variable">$arr</span> <span class="keyword">as</span> <span class="variable">$k</span> =&gt; <span class="variable">$v</span>) &#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 用 &amp; 引用改原件</span></span><br><span class="line"><span class="keyword">foreach</span> (<span class="variable">$nums</span> <span class="keyword">as</span> &amp;<span class="variable">$n</span>) &#123; <span class="variable">$n</span> *= <span class="number">10</span>; &#125;</span><br><span class="line"><span class="keyword">unset</span>(<span class="variable">$n</span>);   <span class="comment">// 用完解除引用</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="1-6-数组（重点）"><a href="#1-6-数组（重点）" class="headerlink" title="1.6 数组（重点）"></a>1.6 数组（重点）</h2><p><strong>两种数组</strong>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$tags</span> = [<span class="string">&quot;php&quot;</span>,<span class="string">&quot;web&quot;</span>,<span class="string">&quot;rce&quot;</span>];      <span class="comment">// 索引：按下标 [0][1][2]</span></span><br><span class="line"><span class="variable">$user</span> = [<span class="string">&quot;name&quot;</span> =&gt; <span class="string">&quot;admin&quot;</span>];      <span class="comment">// 关联：按名字 [&quot;name&quot;]</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>动态增删</strong>（C 做不到）：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$cart</span> = [];</span><br><span class="line"><span class="variable">$cart</span>[] = <span class="string">&quot;苹果&quot;</span>;         <span class="comment">// 尾部追加，自动编号</span></span><br><span class="line"><span class="variable">$cart</span>[<span class="string">&quot;price&quot;</span>] = <span class="number">5</span>;       <span class="comment">// 直接加键值对</span></span><br><span class="line"><span class="keyword">unset</span>(<span class="variable">$cart</span>[<span class="string">&quot;price&quot;</span>]);    <span class="comment">// 删除键</span></span><br></pre></td></tr></table></figure>
+
+<p><code>=&gt;</code> <strong>键值对</strong>：左边键名（标签），右边值（内容）。</p>
+<p><strong>嵌套数组</strong>：<code>$deep[&quot;users&quot;][&quot;admin&quot;][&quot;level&quot;]</code></p>
+<p><strong>数组合并</strong>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$a</span> + <span class="variable">$b</span>;              <span class="comment">// +：左边优先，重复键保留左边</span></span><br><span class="line"><span class="title function_ invoke__">array_merge</span>(<span class="variable">$a</span>,<span class="variable">$b</span>);   <span class="comment">// merge：右边覆盖左边</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>常用</strong>：<code>count($arr)</code> 长度、<code>isset($arr[&quot;k&quot;])</code> 判断键存在。</p>
+<h2 id="1-7-函数"><a href="#1-7-函数" class="headerlink" title="1.7 函数"></a>1.7 函数</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">add</span>(<span class="params"><span class="variable">$a</span>, <span class="variable">$b</span></span>) </span>&#123; <span class="keyword">return</span> <span class="variable">$a</span> + <span class="variable">$b</span>; &#125;   <span class="comment">// 不写返回类型</span></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">greet</span>(<span class="params"><span class="variable">$name</span> = <span class="string">&quot;游客&quot;</span></span>) </span>&#123; ... &#125;      <span class="comment">// 默认参数</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>作用域</strong>：函数内读全局变量要 <code>global $x;</code>，否则拿到 NULL（CTF 常见坑）。</li>
+<li>传引用：参数前加 <code>&amp;</code>。</li>
+<li>匿名函数 &#x2F; 闭包：<code>function()&#123;&#125;</code>。</li>
+</ul>
+<h2 id="1-8-字符串"><a href="#1-8-字符串" class="headerlink" title="1.8 字符串"></a>1.8 字符串</h2><table>
+<thead>
+<tr>
+<th>函数</th>
+<th>作用</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>strlen</code></td>
+<td>长度</td>
+<td><code>strlen(&quot;abc&quot;)=3</code></td>
+</tr>
+<tr>
+<td><code>strpos</code></td>
+<td>找位置</td>
+<td><code>strpos($s,&quot;CTF&quot;)</code></td>
+</tr>
+<tr>
+<td><code>explode</code></td>
+<td>按分隔符拆数组</td>
+<td><code>explode(&quot;,&quot;,$s)</code></td>
+</tr>
+<tr>
+<td><code>implode</code></td>
+<td>数组转串</td>
+<td><code>implode(&quot;,&quot;,$a)</code></td>
+</tr>
+<tr>
+<td><code>str_replace</code></td>
+<td>替换</td>
+<td><code>str_replace(&quot;a&quot;,&quot;b&quot;,$s)</code></td>
+</tr>
+<tr>
+<td><code>substr</code></td>
+<td>截取</td>
+<td><code>substr($s,0,5)</code></td>
+</tr>
+<tr>
+<td><code>strtolower/strtoupper</code></td>
+<td>大小写</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>strrev</code></td>
+<td>反转</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>preg_match</code></td>
+<td>正则匹配</td>
+<td>过滤常用</td>
+</tr>
+</tbody></table>
+<p><img src="/images/php-learn/%E7%B4%A0%E6%9D%90-%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%87%BD%E6%95%B0%E8%A1%A8.png" alt="字符串函数速查表"></p>
+<ul>
+<li>双引号解析变量，单引号不解析。</li>
+</ul>
+<h2 id="1-9-超全局变量与文件"><a href="#1-9-超全局变量与文件" class="headerlink" title="1.9 超全局变量与文件"></a>1.9 超全局变量与文件</h2><p><strong>超全局变量（关联数组）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>变量</th>
+<th>来源</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$_GET</code></td>
+<td>URL <code>?a=x</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>$_POST</code></td>
+<td>POST 表单</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>$_REQUEST</code></td>
+<td>GET+POST+Cookie 合并</td>
+<td><strong>POST 优先</strong></td>
+</tr>
+<tr>
+<td><code>$_COOKIE</code></td>
+<td>Cookie</td>
+<td>反序列化入口常在这</td>
+</tr>
+<tr>
+<td><code>$_SERVER</code></td>
+<td>服务器信息</td>
+<td>UA&#x2F;IP 可当输入点</td>
+</tr>
+<tr>
+<td><code>$_FILES</code></td>
+<td>文件上传</td>
+<td>上传题核心</td>
+</tr>
+</tbody></table>
+<ul>
+<li><code>?a[]=1</code> 会把参数变成<strong>数组</strong>（绕过校验的根源）。</li>
+<li><code>$_REQUEST</code> <strong>同名时 POST 优先</strong> → 可绕过只过滤 <code>$_GET</code> 的逻辑。</li>
+</ul>
+<p><strong>文件包含</strong>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">include</span> <span class="string">&quot;secret.php&quot;</span>;   <span class="comment">// 文件不存在：警告，继续</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">&quot;secret.php&quot;</span>;   <span class="comment">// 文件不存在：致命错误</span></span><br></pre></td></tr></table></figure>
+
+<p><code>include</code> 后跟用户可控值 → <strong>文件包含漏洞（LFI）</strong>。</p>
+<p><strong>文件读写</strong>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_ invoke__">file_get_contents</span>(<span class="string">&quot;file&quot;</span>)     <span class="comment">// 读</span></span><br><span class="line"><span class="title function_ invoke__">file_put_contents</span>(<span class="string">&quot;file&quot;</span>,内容) <span class="comment">// 写</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="二、危险函数与-RCE"><a href="#二、危险函数与-RCE" class="headerlink" title="二、危险函数与 RCE"></a>二、危险函数与 RCE</h1><h2 id="2-1-危险函数清单"><a href="#2-1-危险函数清单" class="headerlink" title="2.1 危险函数清单"></a>2.1 危险函数清单</h2><table>
+<thead>
+<tr>
+<th>函数</th>
+<th>作用</th>
+<th>CTF 用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>system()</code></td>
+<td>执行命令并输出</td>
+<td>直接 RCE</td>
+</tr>
+<tr>
+<td><code>exec()</code></td>
+<td>执行命令返回最后一行</td>
+<td>RCE</td>
+</tr>
+<tr>
+<td><code>shell_exec()</code></td>
+<td>执行命令返回全部输出</td>
+<td>RCE</td>
+</tr>
+<tr>
+<td><code>passthru()</code></td>
+<td>执行并原样输出</td>
+<td>RCE</td>
+</tr>
+<tr>
+<td><code>eval()</code></td>
+<td>字符串当 PHP 代码执行</td>
+<td><strong>最危险</strong>，代码执行</td>
+</tr>
+<tr>
+<td><code>assert()</code></td>
+<td>检查表达式，可利用执行</td>
+<td>老版本 RCE</td>
+</tr>
+<tr>
+<td><code>preg_replace(&#39;/e&#39;)</code></td>
+<td>正则替换时执行</td>
+<td>老版本 RCE</td>
+</tr>
+</tbody></table>
+<h2 id="2-2-黑名单过滤绕过"><a href="#2-2-黑名单过滤绕过" class="headerlink" title="2.2 黑名单过滤绕过"></a>2.2 黑名单过滤绕过</h2><p><strong>核心思想</strong>：过滤检查的是<strong>明文字符</strong>，只要命令<strong>解析后变成目标命令</strong>、但明文字符串里没有关键词，就绕过。</p>
+<p><img src="/images/php-learn/%E7%B4%A0%E6%9D%90-%E8%BF%87%E6%BB%A4%E9%BB%91%E5%90%8D%E5%8D%95%E5%8E%9F%E7%90%86.png" alt="过滤黑名单原理"></p>
+<table>
+<thead>
+<tr>
+<th>要绕</th>
+<th>技巧</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>空格</td>
+<td>用 tab（URL 里 <code>%09</code>）、<code>$&#123;IFS&#125;</code></td>
+</tr>
+<tr>
+<td>命令名</td>
+<td><code>ty^pe</code>（<code>^</code> 转义）、换等价命令 <code>type→more</code></td>
+</tr>
+<tr>
+<td>关键词</td>
+<td>通配符 <code>fl*g.txt</code>、引号拼接</td>
+</tr>
+<tr>
+<td>编码</td>
+<td>base64 编码再解码执行</td>
+</tr>
+</tbody></table>
+<p><strong>示例</strong>（本地实测）：黑名单过滤空格、type、flag：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">type%20flag.txt      → 被拦（含空格）</span><br><span class="line">type%09flag.txt      → 拦截信息变成&quot;type&quot;（空格已绕，剩 type）</span><br><span class="line">ty^pe%09fl*g.txt     → 成功读到 flag</span><br><span class="line">more%09fl*g.txt     → 成功（换命令 + 通配符）</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-3-Linux-常用绕过技巧"><a href="#2-3-Linux-常用绕过技巧" class="headerlink" title="2.3 Linux 常用绕过技巧"></a>2.3 Linux 常用绕过技巧</h2><p>（真实 CTF 题多在 Linux 服务器）</p>
+<table>
+<thead>
+<tr>
+<th>要绕</th>
+<th>Linux 技巧</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>空格</td>
+<td><code>$&#123;IFS&#125;</code>、<code>$IFS$9</code>、<code>%09</code>、<code>&lt;</code> 重定向</td>
+</tr>
+<tr>
+<td>关键词</td>
+<td>单引号拼接 <code>fl&#39;&#39;ag</code>、反斜杠 <code>f\l\ag</code>、<code>$@</code>&#x2F;<code>$9</code>、通配符</td>
+</tr>
+<tr>
+<td>命令名</td>
+<td><code>cat</code>→<code>tac</code>&#x2F;<code>more</code>&#x2F;<code>less</code>&#x2F;<code>head</code>、<code>/bin/ca&#39;&#39;t</code></td>
+</tr>
+<tr>
+<td>编码</td>
+<td><code>base64</code> 编码再解码执行</td>
+</tr>
+</tbody></table>
+<p><img src="/images/php-learn/%E7%B4%A0%E6%9D%90-Linux%E7%BB%95%E8%BF%87%E6%8A%80%E5%B7%A7.png" alt="Linux 常用绕过技巧"></p>
+<blockquote>
+<p>⚠️ 以上技巧仅用于 CTF 平台 &#x2F; 授权靶机，属安全研究学习。</p>
+</blockquote>
+<hr>
+<h1 id="三、反序列化漏洞"><a href="#三、反序列化漏洞" class="headerlink" title="三、反序列化漏洞"></a>三、反序列化漏洞</h1><h2 id="3-1-序列化格式"><a href="#3-1-序列化格式" class="headerlink" title="3.1 序列化格式"></a>3.1 序列化格式</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_ invoke__">serialize</span>(<span class="variable">$obj</span>);     <span class="comment">// 对象 → 字符串</span></span><br><span class="line"><span class="title function_ invoke__">unserialize</span>(<span class="variable">$str</span>);   <span class="comment">// 字符串 → 对象</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>类型字母</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>字母</th>
+<th>类型</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>b</code></td>
+<td>布尔</td>
+<td><code>b:1;</code> 真 &#x2F; <code>b:0;</code> 假</td>
+</tr>
+<tr>
+<td><code>i</code></td>
+<td>整数</td>
+<td><code>i:10;</code></td>
+</tr>
+<tr>
+<td><code>d</code></td>
+<td>浮点</td>
+<td><code>d:3.14;</code></td>
+</tr>
+<tr>
+<td><code>s</code></td>
+<td>字符串</td>
+<td><code>s:2:&quot;hi&quot;;</code></td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td>null</td>
+<td><code>N;</code></td>
+</tr>
+<tr>
+<td><code>a</code></td>
+<td>数组</td>
+<td><code>a:2:&#123;...&#125;</code></td>
+</tr>
+<tr>
+<td><code>O</code></td>
+<td>对象</td>
+<td><code>O:4:&quot;User&quot;:...</code></td>
+</tr>
+</tbody></table>
+<p><strong>对象格式解读</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">O:4:&quot;User&quot;:2:&#123;s:4:&quot;name&quot;;s:3:&quot;CTF&quot;;s:4:&quot;role&quot;;s:5:&quot;guest&quot;;&#125;</span><br><span class="line">│ 类名长  类名   属性数  │键名│  │键值│  │键名│   │键值│</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-2-魔术方法"><a href="#3-2-魔术方法" class="headerlink" title="3.2 魔术方法"></a>3.2 魔术方法</h2><p>以 <code>__</code> 开头，PHP 在特定时刻<strong>自动调用</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>触发时机</th>
+<th>CTF 价值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>__construct</code></td>
+<td><code>new</code> 时</td>
+<td>构造</td>
+</tr>
+<tr>
+<td><code>__destruct</code></td>
+<td>对象销毁时</td>
+<td><strong>常藏危险操作</strong></td>
+</tr>
+<tr>
+<td><code>__wakeup</code></td>
+<td><code>unserialize</code> 时</td>
+<td>反序列化必触发</td>
+</tr>
+<tr>
+<td><code>__toString</code></td>
+<td>当字符串用对象</td>
+<td>常被串联</td>
+</tr>
+<tr>
+<td><code>__call</code></td>
+<td>调不存在的方法</td>
+<td>高级利用</td>
+</tr>
+<tr>
+<td><code>__invoke</code></td>
+<td>当函数用对象</td>
+<td>可触发执行</td>
+</tr>
+<tr>
+<td><code>__get/__set</code></td>
+<td>访问不存在属性</td>
+<td>—</td>
+</tr>
+</tbody></table>
+<p><strong>漏洞原理</strong>：代码把用户输入直接 <code>unserialize</code>，而某类魔术方法里有危险操作 → 攻击者控制属性值触发。</p>
+<h2 id="3-3-POP-链"><a href="#3-3-POP-链" class="headerlink" title="3.3 POP 链"></a>3.3 POP 链</h2><p><strong>POP &#x3D; Property-Oriented Programming（面向属性编程）</strong>，ROP 的属性版。</p>
+<p><strong>核心</strong>：攻击者不能直接调方法，只能控制属性；利用自动触发的魔术方法，把属性引导到危险函数。</p>
+<p><img src="/images/php-learn/%E7%B4%A0%E6%9D%90-POP%E9%93%BE%E6%B5%81%E7%A8%8B%E5%9B%BE.png" alt="POP 链流程图"></p>
+<p><strong>示例（A→B→system）</strong>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$obj</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">__destruct</span>(<span class="params"></span>) </span>&#123; <span class="variable language_">$this</span>-&gt;obj-&gt;<span class="title function_ invoke__">run</span>(); &#125;   <span class="comment">// 销毁时调 obj 的 run()</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$cmd</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">run</span>(<span class="params"></span>) </span>&#123; <span class="title function_ invoke__">system</span>(<span class="variable">$this</span>-&gt;cmd); &#125;          <span class="comment">// 危险终点</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>攻击者构造</strong>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$a</span> = <span class="keyword">new</span> <span class="title function_ invoke__">A</span>();</span><br><span class="line"><span class="variable">$a</span>-&gt;obj = <span class="keyword">new</span> <span class="title function_ invoke__">B</span>();               <span class="comment">// 把 A.obj 换成 B</span></span><br><span class="line"><span class="variable">$a</span>-&gt;obj-&gt;cmd = <span class="string">&quot;whoami&quot;</span>;         <span class="comment">// 填命令</span></span><br><span class="line"><span class="keyword">echo</span> <span class="title function_ invoke__">serialize</span>(<span class="variable">$a</span>);              <span class="comment">// 生成 payload</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>执行链</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">unserialize(还原对象) → 脚本结束 A 销毁 → __destruct → obj-&gt;run()</span><br><span class="line">→ B::run() → system(cmd) ✅</span><br></pre></td></tr></table></figure>
+
+<p><strong>多跳链</strong>：<code>A→B→C→system</code>，每层靠属性指向连接，像多米诺骨牌。</p>
+<p><strong>读链方法</strong>：找 <code>system/eval</code> 终点 → 往回追谁调它 → 追到魔术方法起点 → 用属性串链。</p>
+<h2 id="3-4-wakeup-绕过"><a href="#3-4-wakeup-绕过" class="headerlink" title="3.4 __wakeup 绕过"></a>3.4 <code>__wakeup</code> 绕过</h2><p><strong>CVE-2016-7124</strong>：序列化串里<strong>属性数 &gt; 实际属性数</strong>时，PHP 跳过 <code>__wakeup()</code>。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 正常：O:4:&quot;Test&quot;:1:&#123;...&#125;      → __wakeup 触发</span></span><br><span class="line"><span class="comment">// 绕过：O:4:&quot;Test&quot;:99:&#123;...&#125;     → __wakeup 跳过</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>用途</strong>：<code>__wakeup</code> 里若有拦截 &#x2F; 校验，夸大属性数跳过它，危险操作就能执行。</p>
+<h2 id="3-5-实战-getshell-流程"><a href="#3-5-实战-getshell-流程" class="headerlink" title="3.5 实战 getshell 流程"></a>3.5 实战 getshell 流程</h2><p><strong>题目</strong>：<code>unserialize($_GET[&#39;data&#39;])</code> 用户可控，<code>File::__destruct</code> 写文件。</p>
+<p><strong>完整流程</strong>：</p>
+<ol>
+<li><strong>读源码</strong>：找 <code>unserialize</code> 漏洞点、找危险魔术方法（<code>__destruct</code> 写文件）</li>
+<li><strong>确定目标属性</strong>：<code>filename</code>（写哪）、<code>content</code>（写什么）</li>
+<li><strong>用 serialize() 生成 payload</strong>（不手拼）：</li>
+</ol>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$f</span> = <span class="keyword">new</span> <span class="title class_">File</span>();</span><br><span class="line"><span class="variable">$f</span>-&gt;filename = <span class="string">&quot;shell.php&quot;</span>;</span><br><span class="line"><span class="variable">$f</span>-&gt;content  = <span class="string">&#x27;&lt;?php echo &quot;HACKED&quot;; ?&gt;&#x27;</span>;</span><br><span class="line"><span class="keyword">echo</span> <span class="title function_ invoke__">serialize</span>(<span class="variable">$f</span>);</span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li><strong>URL 编码提交</strong>：特殊字符 <code>&#123; &#125; &quot; ;</code> 需编码（<code>%7B %7D %22 %3B</code>）</li>
+<li><strong>访问生成的 shell.php 验证</strong> → getshell 成功</li>
+</ol>
+<hr>
+<h1 id="四、CTF-高频坑速记"><a href="#四、CTF-高频坑速记" class="headerlink" title="四、CTF 高频坑速记"></a>四、CTF 高频坑速记</h1><ol>
+<li><code>&quot;0e123&quot; == 0</code> 为真（0e 开头 &#x3D; 0）；<code>&quot;abc&quot; == 0</code> 为真</li>
+<li><code>===</code> 才查类型，<code>==</code> 只比值</li>
+<li><code>?a[]=1</code> 把参数变数组 → <code>md5/strcmp/preg_match</code> 失灵</li>
+<li><code>$_REQUEST</code> 混吃三种来源，POST 优先 → 绕过单来源过滤</li>
+<li><code>eval/system/assert/include</code> 是 RCE 与文件包含入口</li>
+<li>类内读全局要 <code>global</code>，否则 NULL</li>
+<li>反序列化漏洞 &#x3D; 用户可控 <code>unserialize</code> + 危险魔术方法（<code>__destruct/__wakeup</code>）</li>
+<li>过滤黑名单拦的是明文字符 → 用等价写法（tab &#x2F; 通配符 &#x2F; 拼接 &#x2F; 换命令）绕过</li>
+</ol>
+<hr>
+<p><em>笔记会随学习进度持续更新。</em></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wang-inception-point.github.io/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" data-id="cmvnlho6900016swk0epa0y3v" data-title="PHP 初期学习笔记（CTF Web 方向）" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web%E5%AE%89%E5%85%A8/" rel="tag">Web安全</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" rel="tag">反序列化</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%AC%AC%E4%B8%80%E5%91%A8%E5%91%A8%E6%8A%A5/">第一周周报</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web%E5%AE%89%E5%85%A8/" rel="tag">Web安全</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" rel="tag">反序列化</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/CTF/" style="font-size: 10px;">CTF</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/RCE/" style="font-size: 10px;">RCE</a> <a href="/tags/Web%E5%AE%89%E5%85%A8/" style="font-size: 10px;">Web安全</a> <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" style="font-size: 10px;">反序列化</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/10/">十月 2026</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">PHP 初期学习笔记（CTF Web 方向）</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 wang-inception-point<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
